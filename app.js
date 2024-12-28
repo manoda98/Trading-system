@@ -5,7 +5,15 @@ const authenticationRoutes = require('./routes/authenticationRoutes');
 
 
 const app = express();
-mongoose.connect("mongodb://localhost:27017/trading")
+
+let mongoHost;
+if (process.env.MONGO_HOST) {
+    mongoHost = process.env.MONGO_HOST;
+} else {
+    mongoHost = "localhost";
+}
+
+mongoose.connect(`mongodb://${mongoHost}:27017/trading`)
 
 app.use(express.json());
 

@@ -2,9 +2,10 @@ const express = require('express');
 const mongoose = require("mongoose")
 const orderRoutes = require('./routes/ordersRoutes');
 const authenticationRoutes = require('./routes/authenticationRoutes');
-
+const cors = require('cors')
 
 const app = express();
+app.use(cors())
 
 let mongoHost;
 if (process.env.MONGO_HOST) {

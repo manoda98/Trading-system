@@ -19,7 +19,7 @@ router.post("/register", async (req, res) => {
     }
 
     try {
-        const user = await User.find({userId});
+        const user = await User.findOne({userId});
         console.log(user)
         if (user) {
             res.status(500).json({ error: "UseId already exsists"});

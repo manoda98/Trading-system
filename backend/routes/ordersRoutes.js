@@ -6,7 +6,8 @@ const ObjectId = require('mongoose').Types.ObjectId;
 
 // Create Order
 router.post('/submit', async (req, res) => {
-    if (!userId || !side || !size || !price || !symbol) {
+    const {side , size, price, symbol} = req.body;
+    if (!side || !size || !price || !symbol) {
         res.status(400).json({
             message: 'userId, side, size, price and symbol are required in request body'
         });
@@ -112,6 +113,7 @@ router.delete('/cancel/:id', async (req, res) => {
 });
 //modify update(only size and prise can be modified)
 router.put('/update/:id', async (req, res) => { 
+    const{size, price} = req.body;
     if (!size || !price) {
         res.status(400).json({
             message: 'Size and prise are required in request body'
@@ -272,4 +274,60 @@ router.get('/search', async (req, res) => {
     }
 })
 
+//Trade endpoint
+router.put('/trade/:id', async (req, res) => {
+    try {
+        console.log("Request received on trade. Request params")
+        console.log(req.params)
+
+        const authHeader = req.headers.authorization;
+        console.log(authHeader)
+        if(!authHeader) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return
+        }
+
+        const token = authHeader.split(' ')[1];
+        console.log(token)
+
+        const payload = jwt.verify(token, 'SECRET');
+        console.log(payload)
+
+        const {id} = req.params;
+        console.log(id)
+
+        const order = await Order.findById(id);
+        console.log(order)
+
+        if (!order) {
+            res.status(500).json({ error: "Order does not exist"});
+            return
+        }
+
+        if(order.userId == payload.userId) {
+            res.status(200).json({
+                message: "Cannot trade own order!."
+            });
+            return
+        }
+
+        const tradedOrder = await Order.findByIdAndUpdate(
+            id,
+            {$set: { state: "TRADED"}},
+            {new: true, runValidators: true}
+        );
+
+        res.status(200).json({
+            status: "Success",
+            message: "Traded",
+            order: tradedOrder
+        });
+
+    } catch (error) {
+        res.status(500).json({error: error.message});
+    }
+
+})
 module.exports = router;

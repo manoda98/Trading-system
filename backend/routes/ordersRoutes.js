@@ -3,6 +3,7 @@ const router = express.Router();
 const Order = require("../model/order")
 const jwt = require('jsonwebtoken');
 const ObjectId = require('mongoose').Types.ObjectId;
+const { isBlacklisted } = require('../model/tokenBlacklist');
 
 // Create Order
 router.post('/submit', async (req, res) => {
@@ -29,6 +30,13 @@ router.post('/submit', async (req, res) => {
         const token = authHeader.split(' ')[1];
         console.log(token)
 
+        if (isBlacklisted(token)) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return
+        }
+
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)
 
@@ -53,7 +61,7 @@ router.post('/submit', async (req, res) => {
 });
 
 //cancel order 
-router.delete('/cancel/:id', async (req, res) => {
+router.put('/cancel/:id', async (req, res) => {
     try {
         console.log("Request received on cancel. Request params")
         console.log(req.params)
@@ -81,6 +89,13 @@ router.delete('/cancel/:id', async (req, res) => {
 
         if (!order) {
             res.status(500).json({ error: "Order does not exist"});
+            return
+        }
+
+        if(order.state === "CANCELLED") {
+            res.status(200).json({
+                error: "Can't cancel alredy cancelled order."
+            });
             return
         }
         
@@ -145,15 +160,22 @@ router.put('/update/:id', async (req, res) => {
         const order = await Order.findById(id);
         console.log(order)
 
-        if(order.state === "CANCELLED") {
+        if (!order) {
+            res.status(500).json({ error: "Order does not exist"});
+            return
+        }
+
+        if (order.state === "CANCELLED") {
             res.status(200).json({
-                message: "Can't modify order."
+                error: "Can't modify cancelled order."
             });
             return
         }
 
-        if (!order) {
-            res.status(500).json({ error: "Order does not exist"});
+        if (order.state === "TRADED") {
+            res.status(200).json({
+                error: "Can't modify traded order."
+            });
             return
         }
 
@@ -306,9 +328,23 @@ router.put('/trade/:id', async (req, res) => {
             return
         }
 
-        if(order.userId == payload.userId) {
+        if (order.userId == payload.userId) {
             res.status(200).json({
-                message: "Cannot trade own order!."
+                error: "Cannot trade own order!."
+            });
+            return
+        }
+
+        if (order.state === "CANCELLED") {
+            res.status(200).json({
+                error: "Can't trade cancelled order."
+            });
+            return
+        }
+        
+        if (order.state === "TRADED") {
+            res.status(200).json({
+                error: "Can't trade alredy traded order."
             });
             return
         }

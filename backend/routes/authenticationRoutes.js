@@ -4,8 +4,11 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const user = require("../model/user");
 const saltRounds = 10;
+const { add } = require('../model/tokenBlacklist')
 
 const router = express.Router();
+
+let blackListedTokens = [];
 
 //Register endpoint
 router.post("/register", async (req, res) => {
@@ -83,4 +86,16 @@ router.post("/login",async (req,res) => {
     }
 });
 
+//logout endpoint
+
+router.post('/logout', (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(400).send('Token is required');
+    console.log(token)
+
+    // Add the token to the blacklist
+    add(token);
+    res.send('Logged out successfully');
+
+});
 module.exports = router;

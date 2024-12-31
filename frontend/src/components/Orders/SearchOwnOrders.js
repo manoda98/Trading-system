@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders } from '../../api'; // Import API functions
+import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders} from '../../api'; // Import API functions
 import './styles.css';
 
 const SearchOwnOrders = ({ token }) => {
@@ -13,15 +13,14 @@ const SearchOwnOrders = ({ token }) => {
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
 
-  const [searchFormVisible, setSearchFormVisible] = useState(false);
   const [searchSymbol, setSearchSymbol] = useState('');
   const [searchSide, setSearchSide] = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
   const fetchOrders = async () => {
     try {
-      const { data } = await searchOwnOrders(token); // Fetch orders from API
-      setOrders(data.orders); // Set orders to state
+      const { data } = await searchOwnOrders(token);
+      setOrders(data.orders);
     } catch (error) {
       alert('Error fetching your orders.');
     }
@@ -97,85 +96,93 @@ const SearchOwnOrders = ({ token }) => {
         return;
       }
 
-      // Correct call to searchOtherOrders
       const { data } = await searchOtherOrders({ symbol: searchSymbol, side: searchSide }, token);
       setSearchResults(data.orders); // Update state with search results
-      alert('Search completed successfully!');
     } catch (error) {
       console.log(error);
       alert('Error fetching search results.');
     }
   };
 
+  const handleTrading = async (orderId)=> {
+    try {
+      await tradeOrders(orderId, token); // Call cancel order API
+      alert('Order traded successfully!');
+    } catch (error) {
+      console.log(error);
+      alert('Error executing trade.');
+    }
+  };
+
   return (
     <div className="split-container">
-      {/* Search Form */}
-      {searchFormVisible && (
-        <div className="search-form">
-          <h4>Search Other Orders</h4>
-          <div className="input-group">
-            <label>Symbol: </label>
-            <input
-              value={searchSymbol}
-              onChange={(e) => setSearchSymbol(e.target.value)}
-            />
+      {/* Search Other Orders Section */}
+      <div className="left-section">
+        <div className="order-container">
+          <div className="header-row">
+            <h3>Market Orders</h3>
+            <div className="input-group">
+              <label>Enter Symbol: </label>
+              <input
+                value={searchSymbol}
+                onChange={(e) => setSearchSymbol(e.target.value)}
+              />
+            </div>
+            <div className="input-group">
+              <label>Enter Side: </label>
+              <input
+                value={searchSide}
+                onChange={(e) => setSearchSide(e.target.value)}
+              />
+            </div>
+            <button className="new-order-btn" onClick={searchOtherOrdersHandler}>
+              Search
+            </button>
           </div>
-          <div className="input-group">
-            <label>Side: </label>
-            <input
-              value={searchSide}
-              onChange={(e) => setSearchSide(e.target.value)}
-            />
-          </div>
-          <button className="search-btn" onClick={searchOtherOrdersHandler}>
-            Search
-          </button>
-          <button
-            className="cancel-search-btn"
-            onClick={() => setSearchFormVisible(false)}
-          >
-            Cancel
-          </button>
-        </div>
-      )}
 
-      {/* Search Results */}
-      {searchResults.length > 0 && (
-        <div className="search-results">
-          <h4>Market Orders</h4>
-          <table className="orders-table">
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Side</th>
-                <th>Size</th>
-                <th>Price</th>
-                <th>State</th>
-              </tr>
-            </thead>
-            <tbody>
-              {searchResults.map((order) => (
-                <tr key={order._id}>
-                  <td>{order.symbol}</td>
-                  <td>{order.side}</td>
-                  <td>{order.size}</td>
-                  <td>{order.price}</td>
-                  <td>{order.state}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+
+
+          {/* Search Results */}
+          {searchResults.length > 0 && (
+            <div className="search-results">
+              <h4>Market Orders</h4>
+              <table className="orders-table">
+                <thead>
+                  <tr>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Size</th>
+                    <th>Price</th>
+                    <th>State</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {searchResults.map((order) => (
+                    <tr key={order._id}>
+                      <td>{order.symbol}</td>
+                      <td>{order.side}</td>
+                      <td>{order.size}</td>
+                      <td>{order.price}</td>
+                      <td>{order.state}</td>
+                      <button
+                        className="trade-btn"
+                        onClick={() => handleTrading(order._id)}
+                      >
+                        Trade
+                      </button>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
-      <button
-        className="search-other-orders-btn"
-        onClick={() => setSearchFormVisible(true)}
-      >
-        Search Other Orders
-      </button>
+      </div>
 
       {/* Left section: Your Orders */}
-      <div className="left-section">
+      <div className="right-section">
         <div className="order-container">
           <div className="header-row">
             <h3>Your Orders</h3>
@@ -194,7 +201,7 @@ const SearchOwnOrders = ({ token }) => {
                   <th>Size</th>
                   <th>Price</th>
                   <th>State</th>
-                  <th>Actions</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>

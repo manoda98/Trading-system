@@ -84,7 +84,7 @@ button {
 }
 
 .input-group input {
-  width: 100%;
+  width: 100px;
   padding: 8px;
   font-size: 14px;
   border: 1px solid #ddd;
@@ -114,7 +114,6 @@ button {
 .new-order-btn:hover {
   background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
 }
-
 .cancel-btn {
   background-color: red; /* Universal red color */
   color: white;
@@ -237,3 +236,12 @@ button {
   text-align: left;
 }
 
+.trade-btn {
+  background-color:  #28a745; /* Universal red color */
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.trade-btn:hover {
+  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+}

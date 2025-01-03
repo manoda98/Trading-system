@@ -78,6 +78,13 @@ router.put('/cancel/:id', async (req, res) => {
         const token = authHeader.split(' ')[1];
         console.log(token)
 
+        if (isBlacklisted(token)) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return
+        }
+
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)
 
@@ -99,6 +106,13 @@ router.put('/cancel/:id', async (req, res) => {
             return
         }
         
+        if(order.state === "TRADED") {
+            res.status(200).json({
+                error: "Can't cancel traded order."
+            });
+            return
+        }
+
         if (order.userId == payload.userId) {
 
             const canceledOrder = await Order.findByIdAndUpdate(
@@ -126,6 +140,7 @@ router.put('/cancel/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 //modify update(only size and prise can be modified)
 router.put('/update/:id', async (req, res) => { 
     const{size, price} = req.body;
@@ -150,6 +165,13 @@ router.put('/update/:id', async (req, res) => {
 
         const token = authHeader.split(' ')[1];
         console.log(token)
+
+        if (isBlacklisted(token)) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return
+        }
 
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)
@@ -229,6 +251,13 @@ router.get('/search/own', async (req, res) => {
         const token = authHeader.split(' ')[1];
         console.log(token)
 
+        if (isBlacklisted(token)) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return
+        }
+
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)
 
@@ -264,6 +293,13 @@ router.get('/search', async (req, res) => {
 
         const token = authHeader.split(' ')[1];
         console.log(token)
+
+        if (isBlacklisted(token)) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return
+        }
 
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)
@@ -313,6 +349,13 @@ router.put('/trade/:id', async (req, res) => {
 
         const token = authHeader.split(' ')[1];
         console.log(token)
+
+        if (isBlacklisted(token)) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return
+        }
 
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)

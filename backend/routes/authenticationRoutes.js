@@ -89,13 +89,19 @@ router.post("/login",async (req,res) => {
 //logout endpoint
 
 router.post('/logout', (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(400).send('Token is required');
-    console.log(token)
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+          return res.status(400).json({ error: 'Token is required' });
+        }
+    
+        // Add the token to the blacklist
+        add(token);
 
-    // Add the token to the blacklist
-    add(token);
-    res.send('Logged out successfully');
-
-});
+        res.status(200).json({ message: 'Logged out successfully' });
+      } catch (err) {
+        console.error('Logout error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
 module.exports = router;

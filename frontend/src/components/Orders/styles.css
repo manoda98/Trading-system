@@ -245,3 +245,94 @@ button {
 .trade-btn:hover {
   background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
 }
+.split-container {
+  display: flex;
+  height: 100vh; /* Full viewport height */
+  overflow: hidden; /* Prevent content from spilling out */
+}
+
+.left-section, .right-section {
+  flex: 1;
+  overflow-y: auto; /* Enable vertical scrolling in each section */
+  padding: 20px;
+  box-sizing: border-box; /* Include padding in width/height calculations */
+}
+
+/* Top Space with Logout Button */
+.top-space {
+  background-color: #f9f9f9; /* Light background for top space */
+  padding: 15px 20px;  /* Adjust padding for spacing */
+  display: flex;
+  justify-content: flex-end; /* Align logout button to the right */
+  align-items: center;
+  margin-bottom: 10px; /* Space between the top space and main content */
+}
+
+/* Logout Button Styles */
+.logout-btn {
+  background-color: #1bbe1b; /* Universal green color (same as new order button) */
+  color: white;
+  padding: 8px 8px; /* Adjust padding for smaller size */
+  font-size: 14px;  /* Reduce font size */
+  height: auto;     /* Adjust height naturally */
+  line-height: 1.2; /* Adjust text line height */
+  width: 100px;     /* Set a specific width to reduce button length */
+  text-align: center; /* Center the button text */
+  border: none;
+  border-radius: 4px; /* Consistent with other buttons */
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.logout-btn:hover {
+  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+}
+
+
+/* Split Container Styles */
+.split-container {
+  display: flex;
+  height: calc(100vh - 60px); /* Adjust for top space height */
+  overflow: hidden; /* Prevent content overflow */
+}
+
+.left-section, .right-section {
+  flex: 1;
+  padding: 20px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* New Order Button (to match the logout button) */
+.new-order-btn {
+  background-color: #1bbe1b; /* Green color */
+  color: white;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.new-order-btn:hover {
+  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+}
+
+/* Make sure split-container adapts to screen sizes */
+@media (max-width: 768px) {
+  .split-container {
+    flex-direction: column; /* Stack sections vertically on smaller screens */
+  }
+
+  .left-section, .right-section {
+    flex: none;
+    width: 100%; /* Full-width sections on small screens */
+    padding: 10px;
+  }
+}

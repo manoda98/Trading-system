@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './styles.css';
+import { Link} from 'react-router-dom';
+
 const Register = () => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
@@ -47,6 +49,9 @@ const Register = () => {
       </form>
       {message && <pSuccess>{message}</pSuccess>}
       {error && <pError>{error}</pError>}
+      <p>
+        Already have an account? <Link to="/">Login</Link>
+      </p>
     </div>
   );
 };

@@ -14,7 +14,7 @@ export const createOrder = (data, token) =>
   API.post('/api/order/submit', data, { headers: { Authorization: `Bearer ${token}` } });
 
 export const cancelOrder = (id, token) =>
-  API.delete(`/api/order/cancel/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+  API.put(`/api/order/cancel/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
 
 export const modifyOrder = (id, data, token) =>
   API.put(`/api/order/update/${id}`, data, { headers: { Authorization: `Bearer ${token}` } });
@@ -28,4 +28,6 @@ export const searchOtherOrders = (params, token) =>
 export const tradeOrders = (id, token) =>
   API.put(`/api/order/trade/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
 
+export const logout = (token) =>
+  API.post('/api/user/logout', {} , { headers: { Authorization: `Bearer ${token}` } });
 

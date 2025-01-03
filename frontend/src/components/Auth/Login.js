@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './styles.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link} from 'react-router-dom';
+
 const Login = ({ onLogin }) => {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +17,7 @@ const Login = ({ onLogin }) => {
       const { accessToken } = response.data;
       console.log("token : ", accessToken)
       onLogin(accessToken); // Pass the token back to the parent component
-      navigate('/');
+      navigate('/trader-dashboard');
     } catch (err) {
       console.log(err)
       setError('Invalid username or password');
@@ -48,6 +49,9 @@ const Login = ({ onLogin }) => {
         <button type="submit">Login</button>
       </form>
       {error && <pError>{error}</pError>}
+      <p>
+        Don't have an account? <Link to="/register">Register</Link>
+      </p>
     </div>
   );
 };

@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate} from 'react-router-dom';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
-import Home from './components/Home';
-import CreateOrder from './components/Orders/CreateOrder';
-import SearchOwnOrders from './components/Orders/SearchOwnOrders';
+import SearchOwnOrders from './components/Orders/TraderDashBoard';
 
 function App() {
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
 
   useEffect(() => {
     const storedToken = localStorage.getItem('accessToken');
+    console.log(storedToken)
     if (storedToken) {
       setAccessToken(storedToken);
     }
@@ -21,14 +20,17 @@ function App() {
     localStorage.setItem('accessToken', token); // Store the token in localStorage
   };
 
+  const handleLogout = (token) => {
+    setAccessToken(null);
+    localStorage.removeItem('accessToken'); // Store the token in localStorage
+  };
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home token={accessToken} />} />
-        <Route path="/login" element={<Login onLogin={handleLogin} />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/create-order" element={<CreateOrder token={accessToken} />} />
-        <Route path="/my-orders" element={<SearchOwnOrders token={accessToken} />} /> {/* My Orders page */}
+        <Route path="/trader-dashboard" element={accessToken ? <SearchOwnOrders token={accessToken} onLogout={handleLogout} /> : <Navigate to="/" /> } /> 
+        <Route path="/" element={accessToken ? <Navigate to="/trader-dashboard" /> : <Login onLogin={handleLogin} />} />
+        <Route path="/register" element={accessToken ? <Navigate to="/trader-dashboard" /> : <Register />} />
       </Routes>
     </Router>
   );

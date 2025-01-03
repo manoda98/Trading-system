@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders} from '../../api'; // Import API functions
+import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders, logout} from '../../api'; // Import API functions
 import './styles.css';
+import { useNavigate, Link} from 'react-router-dom';
 
-const SearchOwnOrders = ({ token }) => {
+const SearchOwnOrders = ({ token, onLogout }) => {
   const [orders, setOrders] = useState([]);
   const [editingOrder, setEditingOrder] = useState(null);
   const [newSize, setNewSize] = useState('');
@@ -16,6 +17,8 @@ const SearchOwnOrders = ({ token }) => {
   const [searchSymbol, setSearchSymbol] = useState('');
   const [searchSide, setSearchSide] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+
+   const navigate = useNavigate();
 
   const fetchOrders = async () => {
     try {
@@ -32,7 +35,13 @@ const SearchOwnOrders = ({ token }) => {
 
   const handleCancel = async (orderId) => {
     try {
-      await cancelOrder(orderId, token); // Call cancel order API
+      const response = await cancelOrder(orderId, token); // Call cancel order API
+      console.log(response)
+      if (response.data.error) {
+        alert(response.data.error)
+        return
+      }
+
       alert('Order canceled successfully!');
       fetchOrders();
     } catch (error) {
@@ -79,7 +88,13 @@ const SearchOwnOrders = ({ token }) => {
         alert('Both size and price are required!');
         return;
       }
-      await modifyOrder(editingOrder._id, { size: newSize, price: newPrice }, token);
+      const response = await modifyOrder(editingOrder._id, { size: newSize, price: newPrice }, token);
+      
+      if (response.data.error) {
+        alert(response.data.error)
+        return
+      }
+
       setEditingOrder(null);
       alert('Order updated successfully!');
       fetchOrders();
@@ -103,18 +118,46 @@ const SearchOwnOrders = ({ token }) => {
       alert('Error fetching search results.');
     }
   };
-
+  // handle trading order
   const handleTrading = async (orderId)=> {
     try {
-      await tradeOrders(orderId, token); // Call cancel order API
+      const response = await tradeOrders(orderId, token); // Call cancel order API
+      
+      if (response.data.error) {
+        alert(response.data.error)
+        return
+      }
+
       alert('Order traded successfully!');
+      searchOtherOrdersHandler();
     } catch (error) {
       console.log(error);
       alert('Error executing trade.');
     }
   };
 
+  //Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout(token);
+      onLogout();
+      navigate('/');
+      
+
+    } catch (error) {
+      console.log(error);
+      alert('Error in logout.');
+    }
+
+  };
+
   return (
+  <div className="page-container">
+      <div className="top-space">
+        <button className="logout-btn" onClick={() => handleLogout()}>
+          Logout
+        </button>
+      </div>
     <div className="split-container">
       {/* Search Other Orders Section */}
       <div className="left-section">
@@ -139,9 +182,6 @@ const SearchOwnOrders = ({ token }) => {
               Search
             </button>
           </div>
-
-
-
 
           {/* Search Results */}
           {searchResults.length > 0 && (
@@ -268,14 +308,12 @@ const SearchOwnOrders = ({ token }) => {
               <div className="input-group">
                 <label>Symbol: </label>
                 <input
-                  value={symbol}
                   onChange={(e) => setSymbol(e.target.value)}
                 />
               </div>
               <div className="input-group">
                 <label>Side: </label>
                 <input
-                  value={side}
                   onChange={(e) => setSide(e.target.value)}
                 />
               </div>
@@ -283,7 +321,6 @@ const SearchOwnOrders = ({ token }) => {
                 <label>Size: </label>
                 <input
                   type="number"
-                  value={size}
                   onChange={(e) => setSize(e.target.value)}
                 />
               </div>
@@ -291,7 +328,6 @@ const SearchOwnOrders = ({ token }) => {
                 <label>Price: </label>
                 <input
                   type="number"
-                  value={price}
                   onChange={(e) => setPrice(e.target.value)}
                 />
               </div>
@@ -309,6 +345,7 @@ const SearchOwnOrders = ({ token }) => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

@@ -4,7 +4,7 @@ import './styles.css';
 import { useNavigate, Link} from 'react-router-dom';
 
 
-const TraderDashBoard = ({ token, onLogout }) => {
+const AdminDashBoard = ({ token, onLogout }) => {
   const [orders, setOrders] = useState([]);
   const [editingOrder, setEditingOrder] = useState(null);
   const [newSize, setNewSize] = useState('');
@@ -350,4 +350,4 @@ const TraderDashBoard = ({ token, onLogout }) => {
   );
 };
 
-export default TraderDashBoard;
+export default AdminDashBoard;

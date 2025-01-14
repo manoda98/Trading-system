@@ -4,6 +4,7 @@ import './styles.css';
 import { Link} from 'react-router-dom';
 
 const Register = () => {
+  const [userType, setUserType] = useState('');
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,7 +14,7 @@ const Register = () => {
     e.preventDefault();
 
     try {
-      await axios.post('http://localhost:5000/api/user/register', { userId, password });
+      await axios.post('http://localhost:5000/api/user/register', { userType, userId, password });
       setMessage('User registered successfully!');
       setError('')
     } catch (err) {
@@ -27,6 +28,15 @@ const Register = () => {
     <div>
       <h2>Register</h2>
       <form onSubmit={handleSubmit}>
+      <div>
+          <label>User Type:</label>
+          <input
+            type="text"
+            value={userType}
+            onChange={(e) => setUserType(e.target.value)}
+            required
+          />
+        </div>
         <div>
           <label>User ID:</label>
           <input

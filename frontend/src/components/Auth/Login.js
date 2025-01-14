@@ -14,10 +14,26 @@ const Login = ({ onLogin }) => {
 
     try {
       const response = await axios.post('http://localhost:5000/api/user/login', { userId, password });
-      const { accessToken } = response.data;
+      const { accessToken, userType} = response.data;
+
       console.log("token : ", accessToken)
-      onLogin(accessToken); // Pass the token back to the parent component
-      navigate('/trader-dashboard');
+      console.log("userType : ", userType)
+
+      if (userType === "TRADER") {
+        onLogin(accessToken); // Pass the token back to the parent component
+        navigate('/trader-dashboard');
+      }
+
+      if (userType === "ADMIN") {
+        onLogin(accessToken); // Pass the token back to the parent component
+        navigate('/admin-dashboard');
+      }
+
+      else {
+        console.log(userType)
+        setError("Invalid user type")
+      }
+      
     } catch (err) {
       console.log(err)
       setError('Invalid username or password');

@@ -12,27 +12,29 @@ let blackListedTokens = [];
 
 //Register endpoint
 router.post("/register", async (req, res) => {
-    const { userId, password } = req.body;
+    const { userId, password, userType} = req.body;
 
-    if (!userId || !password) {
+    if (!userId || !password || !userType) {
         res.status(400).json({
-            message: 'password and userId are required in request body'
+            message: 'password, userId and userType are required in request body'
         });
         return
     }
 
     try {
         const user = await User.findOne({userId});
-        console.log(user)
         if (user) {
             res.status(500).json({ error: "UseId already exsists"});
             return
         }
         const newUser = new User({
+            userType,
             userId,
             password: await bcrypt.hash(password , 10)
         });
         await newUser.save();
+
+        //console.log(newUser)
 
         res.status(201).json({message: "User registered successfully"});
     } catch (error) {
@@ -47,9 +49,9 @@ router.post("/register", async (req, res) => {
 
 router.post("/login",async (req,res) => {
     console.log(req.body)
-    const { password , userId} = req.body;
+    const { password, userId} = req.body;
 
-    if (!password || !userId) {
+    if (!password || !userId ) {
         res.status(400).json({
             message: 'password and userId are required in request body'
         });
@@ -68,12 +70,14 @@ router.post("/login",async (req,res) => {
         if (await bcrypt.compare(password, user.password)) {
 
             const payload = {
-                userId: user.userId
+                userId: user.userId,
+                userType: user.userType
             };
             const accessToken = jwt.sign(payload, 'SECRET');
             res.status(200).json({
                 messaage: "Login successful",
-                accessToken
+                accessToken,
+                userType: user.userType
             });
         }
         else {

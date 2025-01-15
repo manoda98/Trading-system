@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders, logout} from '../../api'; // Import API functions
 import './styles.css';
 import { useNavigate, Link} from 'react-router-dom';
-
+import { Select, Space } from 'antd';
 
 const TraderDashBoard = ({ token, onLogout }) => {
   const [orders, setOrders] = useState([]);
@@ -151,6 +151,21 @@ const TraderDashBoard = ({ token, onLogout }) => {
     }
 
   };
+  const handleSymbolChange = (value) => {
+    setSymbol(value);
+  };
+  
+  const handleSideChange = (value) => {
+    setSide(value);
+  };
+  
+  const handleSearchSymbolChange = (value) => {
+    setSearchSymbol(value);
+  };
+  
+  const handleSearchSideChange = (value) => {
+    setSearchSide(value);
+  };
 
   return (
   <div className="page-container">
@@ -167,16 +182,27 @@ const TraderDashBoard = ({ token, onLogout }) => {
             <h3>Market Orders</h3>
             <div className="input-group">
               <label>Enter Symbol: </label>
-              <input
-                value={searchSymbol}
-                onChange={(e) => setSearchSymbol(e.target.value)}
+              <Select
+                defaultValue=""
+                style={{ width: 120 }}
+                onChange={handleSearchSymbolChange}
+                options={[
+                  { value: 'GOOGLE', label: 'GOOGLE' },
+                  { value: 'APPLE', label: 'APPLE' },
+                  { value: 'AMAZON', label: 'AMAZON' },
+                ]}
               />
             </div>
             <div className="input-group">
               <label>Enter Side: </label>
-              <input
-                value={searchSide}
-                onChange={(e) => setSearchSide(e.target.value)}
+              <Select
+                defaultValue=""
+                style={{ width: 120 }}
+                onChange={handleSearchSideChange}
+                options={[
+                  { value: 'BUY', label: 'BUY' },
+                  { value: 'SELL', label: 'SELL' },
+                ]}
               />
             </div>
             <button className="new-order-btn" onClick={searchOtherOrdersHandler}>
@@ -308,14 +334,27 @@ const TraderDashBoard = ({ token, onLogout }) => {
               <h4>New Order</h4>
               <div className="input-group">
                 <label>Symbol: </label>
-                <input
-                  onChange={(e) => setSymbol(e.target.value)}
+                <Select
+                  defaultValue=""
+                  style={{ width: 120 }}
+                  onChange={handleSymbolChange}
+                  options={[
+                    { value: 'GOOGLE', label: 'GOOGLE' },
+                    { value: 'APPLE', label: 'APPLE' },
+                    { value: 'AMAZON', label: 'AMAZON' },
+                  ]}
                 />
               </div>
               <div className="input-group">
                 <label>Side: </label>
-                <input
-                  onChange={(e) => setSide(e.target.value)}
+                <Select
+                  defaultValue=""
+                  style={{ width: 120 }}
+                  onChange={handleSideChange}
+                  options={[
+                    { value: 'BUY', label: 'BUY' },
+                    { value: 'SELL', label: 'SELL' },
+                  ]}
                 />
               </div>
               <div className="input-group">

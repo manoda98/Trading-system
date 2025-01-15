@@ -30,12 +30,17 @@ const Register = () => {
       <form onSubmit={handleSubmit}>
       <div>
           <label>User Type:</label>
-          <input
-            type="text"
+          <select
             value={userType}
             onChange={(e) => setUserType(e.target.value)}
-            required
-          />
+            required>
+              
+            <option value="" disabled>
+              Select User Type
+            </option>
+            <option value="ADMIN">ADMIN</option>
+            <option value="TRADER">TRADER</option>
+          </select>
         </div>
         <div>
           <label>User ID:</label>

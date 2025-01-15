@@ -22,7 +22,7 @@ function App() {
       setUserType(payload.userType)
     }
 
-    console.log("userType : ", userType)
+    console.log("userTypeaaa : ", userType)
   }, []);
 
   const handleLogin = (token) => {

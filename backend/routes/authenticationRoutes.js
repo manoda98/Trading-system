@@ -30,13 +30,12 @@ router.post("/register", async (req, res) => {
         const newUser = new User({
             userType,
             userId,
-            password: await bcrypt.hash(password , 10)
+            password: await bcrypt.hash(password , 10),
+            balance: []
         });
         await newUser.save();
-
-        //console.log(newUser)
-
         res.status(201).json({message: "User registered successfully"});
+        
     } catch (error) {
         console.log(error)
         res.status(500).json({error: error.message });

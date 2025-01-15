@@ -14,6 +14,14 @@ router.post('/submit', async (req, res) => {
         });
         return
     }
+
+    if (!['BUY', 'SELL'].includes(side)) {
+        res.status(400).json({
+          message: 'Invalid value for side.',
+        });
+        return;
+      }
+      
     try {
         console.log("Request received on submit. Request body")
         console.log(req.body)

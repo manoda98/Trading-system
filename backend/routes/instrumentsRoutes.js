@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const Instruments = require("../model/instrument")
+const User = require("../model/user")
 const jwt = require('jsonwebtoken');
 const { isBlacklisted } = require('../model/tokenBlacklist');
 
 //Instrument creation endpoint
 router.post('/create-instrument', async (req, res) => {
-    const {instrumentId, symbol, instrumentType} = req.body;
+    const {symbol, instrumentType} = req.body;
     
-    if ( !instrumentId || !symbol || !instrumentType) {
+    if (!symbol || !instrumentType) {
         res.status(400).json({
             message: 'Instrument id, InstrumentType and symbol are required in request body'
         });
@@ -42,7 +43,6 @@ router.post('/create-instrument', async (req, res) => {
         console.log("payload: ", payload)
 
         const newInstrument = {
-            instrumentId : req.body.instrumentId,
             symbol : req.body.symbol,
             instrumentType : req.body.instrumentType
         }
@@ -64,8 +64,7 @@ router.post('/create-instrument', async (req, res) => {
 //Instrument deletion endpoint
 router.delete('/delete-instrument/:id' , async (req, res) => {
         try {
-            console.log("Request received on Delete. Request params")
-            console.log("Request params : ",req.params)
+            console.log("Request received on Delete endpoint")
     
             const authHeader = req.headers.authorization;
             console.log(authHeader)
@@ -120,8 +119,7 @@ router.delete('/delete-instrument/:id' , async (req, res) => {
 //get instrument endpoint
 router.get('/', async (req, res) => {
     try {
-        console.log("Request received on get endpoint. Request params")
-        console.log("Request params : ",req.params)
+        console.log("Request received on get endpoint");
 
         const authHeader = req.headers.authorization;
         console.log(authHeader)
@@ -145,11 +143,11 @@ router.get('/', async (req, res) => {
         const payload = jwt.verify(token, 'SECRET');
         console.log("payload: ",payload)
 
-        const instrument = await Instruments.find({});
-        console.log("Instruments", instrument);
+        const instruments = await Instruments.find({});
+        console.log("Instruments", instruments);
 
 
-        if (!instrument) {
+        if (!instruments) {
             res.status(500).json({ error: "Instrument does not exist"});
             return
         }
@@ -157,6 +155,7 @@ router.get('/', async (req, res) => {
         res.status(200).json({
             status: "Success",
             message: "Instruments get successfuly",
+            instruments
         });
 
 
@@ -165,6 +164,13 @@ router.get('/', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 })
+
+//adjust user balance endpoint
+router.put('/balance/:id', async (req, res) => { 
+    const{userId, symbol, balance} = req.body;
+
+
+});
 
 
 module.exports = router;

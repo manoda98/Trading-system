@@ -1,139 +1,78 @@
 import React, { useState, useEffect } from 'react';
-import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders, logout} from '../../api'; // Import API functions
+import { getInstruments, logout ,deleteInstrument, submitNewInstrument} from '../../api'; // Import API functions
 import './styles.css';
 import { useNavigate, Link} from 'react-router-dom';
+import { Select, Space } from 'antd';
 
 
 const AdminDashBoard = ({ token, onLogout }) => {
-  const [orders, setOrders] = useState([]);
-  const [editingOrder, setEditingOrder] = useState(null);
-  const [newSize, setNewSize] = useState('');
-  const [newPrice, setNewPrice] = useState('');
-  const [submittingNewOrder, setSubmittingNewOrder] = useState(false);
+  const [instruments, setInstruments] = useState([]);
   const [symbol, setSymbol] = useState('');
-  const [side, setSide] = useState('');
-  const [price, setPrice] = useState('');
-  const [size, setSize] = useState('');
+  const [instrumentType, setInstrumentType] = useState('CURRENCY');
+  const [submittingNewInstrument, setSubmittingNewInstrument] = useState(false);
+  const navigate = useNavigate();
 
-  const [searchSymbol, setSearchSymbol] = useState('');
-  const [searchSide, setSearchSide] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-
-   const navigate = useNavigate();
-
-  const fetchOrders = async () => {
+// fetch instrument from the database
+  const fetchInstruments = async () => {
     try {
-      const { data } = await searchOwnOrders(token);
-      setOrders(data.orders);
+      console.log("token in fetch instruments : ", token)
+      const { data } = await getInstruments(token);
+      setInstruments(data.instruments);
+      console.log("Instrument: ", instruments)
     } catch (error) {
-      alert('Error fetching your orders.');
+      alert('Error fetching your instruments.');
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchInstruments();
   }, [token]);
 
-  const handleCancel = async (orderId) => {
-    try {
-      const response = await cancelOrder(orderId, token); // Call cancel order API
-      console.log(response)
-      if (response.data.error) {
-        alert(response.data.error)
-        return
-      }
-
-      alert('Order canceled successfully!');
-      fetchOrders();
-    } catch (error) {
-      alert('Error canceling the order.');
-    }
+  const handleNewInstrument = () => {
+    setSubmittingNewInstrument(true);
   };
 
-  const handleNewOrder = () => {
-    setSubmittingNewOrder(true);
-  };
+  //handle create instrument
 
-  const handleNewOrderSubmit = async () => {
+  const handleCreateInstrument = async () => {
     try {
-      if (!symbol || !side || !price || !size) {
+      if (!symbol || !instrumentType) {
         alert('All fields are required!');
         return;
       }
-      await createOrder(
+      await submitNewInstrument(
         {
+          instrumentType,
           symbol,
-          side,
-          price,
-          size,
         },
         token
       );
-      setSubmittingNewOrder(false);
-      alert('Order submitted successfully!');
-      fetchOrders();
-    } catch (error) {
-      alert('Error submitting the order.');
+
+      setSubmittingNewInstrument(false);
+      alert('Instrument submitted successfully!');
+      fetchInstruments(); 
+
+      }catch (error) {
+      alert('Error creating the instrument.');
     }
   };
 
-  const handleEdit = (order) => {
-    setEditingOrder(order);
-    setNewSize(order.size);
-    setNewPrice(order.price);
-  };
+  //handle delete instrument
 
-  const handleUpdate = async () => {
+  const handleDeleteInstrument = async (id) => {
     try {
-      if (!newSize || !newPrice) {
-        alert('Both size and price are required!');
-        return;
-      }
-      const response = await modifyOrder(editingOrder._id, { size: newSize, price: newPrice }, token);
-      
+      const response = await deleteInstrument(id, token); 
+      console.log(response)
+
       if (response.data.error) {
         alert(response.data.error)
         return
       }
 
-      setEditingOrder(null);
-      alert('Order updated successfully!');
-      fetchOrders();
+      alert('Instrument deleted successfully!');
+      fetchInstruments();
     } catch (error) {
-      alert('Error updating the order.');
-    }
-  };
-
-  // Handle search for other orders
-  const searchOtherOrdersHandler = async () => {
-    try {
-      if (!searchSymbol || !searchSide) {
-        alert('Please enter both Symbol and Side to search.');
-        return;
-      }
-
-      const { data } = await searchOtherOrders({ symbol: searchSymbol, side: searchSide }, token);
-      setSearchResults(data.orders); // Update state with search results
-    } catch (error) {
-      console.log(error);
-      alert('Error fetching search results.');
-    }
-  };
-  // handle trading order
-  const handleTrading = async (orderId)=> {
-    try {
-      const response = await tradeOrders(orderId, token); // Call cancel order API
-      
-      if (response.data.error) {
-        alert(response.data.error)
-        return
-      }
-
-      alert('Order traded successfully!');
-      searchOtherOrdersHandler();
-    } catch (error) {
-      console.log(error);
-      alert('Error executing trade.');
+      alert('Error deleting the instrument.');
     }
   };
 
@@ -152,6 +91,11 @@ const AdminDashBoard = ({ token, onLogout }) => {
 
   };
 
+  const handleChange = (value) => {
+    console.log(`selected ${value}`);
+    setInstrumentType(value)
+  };
+  
   return (
   <div className="page-container">
       <div className="top-space">
@@ -160,108 +104,37 @@ const AdminDashBoard = ({ token, onLogout }) => {
         </button>
       </div>
     <div className="split-container">
-      {/* Search Other Orders Section */}
-      <div className="left-section">
-        <div className="order-container">
-          <div className="header-row">
-            <h3>Market Orders</h3>
-            <div className="input-group">
-              <label>Enter Symbol: </label>
-              <input
-                value={searchSymbol}
-                onChange={(e) => setSearchSymbol(e.target.value)}
-              />
-            </div>
-            <div className="input-group">
-              <label>Enter Side: </label>
-              <input
-                value={searchSide}
-                onChange={(e) => setSearchSide(e.target.value)}
-              />
-            </div>
-            <button className="new-order-btn" onClick={searchOtherOrdersHandler}>
-              Search
-            </button>
-          </div>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="search-results">
-              <h4>Market Orders</h4>
-              <table className="orders-table">
-                <thead>
-                  <tr>
-                    <th>Symbol</th>
-                    <th>Side</th>
-                    <th>Size</th>
-                    <th>Price</th>
-                    <th>State</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {searchResults.map((order) => (
-                    <tr key={order._id}>
-                      <td>{order.symbol}</td>
-                      <td>{order.side}</td>
-                      <td>{order.size}</td>
-                      <td>{order.price}</td>
-                      <td>{order.state}</td>
-                      <button
-                        className="trade-btn"
-                        onClick={() => handleTrading(order._id)}
-                      >
-                        Trade
-                      </button>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Left section: Your Orders */}
+      {/* Left section: Your Instruments */}
       <div className="right-section">
         <div className="order-container">
           <div className="header-row">
-            <h3>Your Orders</h3>
-            <button className="new-order-btn" onClick={() => handleNewOrder()}>
-              New Order
+            <h3>Instruments</h3>
+            <button className="new-order-btn" onClick={() => handleNewInstrument()}>
+              New Instrument
             </button>
           </div>
-          {orders.length === 0 ? (
-            <p>No orders found.</p>
+          {instruments.length === 0 ? (
+            <p>No Instruments found.</p>
           ) : (
             <table className="orders-table">
               <thead>
                 <tr>
-                  <th>Symbol</th>
-                  <th>Side</th>
-                  <th>Size</th>
-                  <th>Price</th>
-                  <th>State</th>
+                  <th>instrumentType</th>
+                  <th>symbol</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => (
-                  <tr key={order._id}>
-                    <td>{order.symbol}</td>
-                    <td>{order.side}</td>
-                    <td>{order.size}</td>
-                    <td>{order.price}</td>
-                    <td>{order.state}</td>
+                {instruments.map((instrument) => (
+                  <tr key={instrument._id}>
+                    <td>{instrument.instrumentType}</td>
+                    <td>{instrument.symbol}</td>
                     <td>
                       <button
                         className="cancel-btn"
-                        onClick={() => handleCancel(order._id)}
+                        onClick={() => handleDeleteInstrument(instrument._id)}
                       >
-                        Cancel
-                      </button>
-                      <button className="edit-btn" onClick={() => handleEdit(order)}>
-                        Edit
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -270,42 +143,10 @@ const AdminDashBoard = ({ token, onLogout }) => {
             </table>
           )}
 
-          {/* Edit Order Form */}
-          {editingOrder && (
-            <div className="edit-order-form">
-              <h4>Edit Order</h4>
-              <div className="input-group">
-                <label>New Size: </label>
-                <input
-                  type="number"
-                  value={newSize}
-                  onChange={(e) => setNewSize(e.target.value)}
-                />
-              </div>
-              <div className="input-group">
-                <label>New Price: </label>
-                <input
-                  type="number"
-                  value={newPrice}
-                  onChange={(e) => setNewPrice(e.target.value)}
-                />
-              </div>
-              <button className="update-btn" onClick={handleUpdate}>
-                Update Order
-              </button>
-              <button
-                className="cancel-edit-btn"
-                onClick={() => setEditingOrder(null)}
-              >
-                Cancel Edit
-              </button>
-            </div>
-          )}
-
-          {/* New Order Form */}
-          {submittingNewOrder && (
+        {/* New instrument Form */}
+          {submittingNewInstrument && (
             <div className="new-order-form">
-              <h4>New Order</h4>
+              <h4>New Instrument</h4>
               <div className="input-group">
                 <label>Symbol: </label>
                 <input
@@ -313,31 +154,32 @@ const AdminDashBoard = ({ token, onLogout }) => {
                 />
               </div>
               <div className="input-group">
-                <label>Side: </label>
-                <input
-                  onChange={(e) => setSide(e.target.value)}
+                <label>Instrument Type: </label>
+                <Select
+                  defaultValue="CURRENCY"
+                  style={{
+                    width: 120,
+                  }}
+                  onChange={handleChange}
+                  options={[
+                    {
+                      value: 'CURRENCY',
+                      label: 'CURRENCY',
+                    },
+                    {
+                      value: 'COMMODITY',
+                      label: 'COMMODITY',
+                    },
+                  ]}
                 />
+               
               </div>
-              <div className="input-group">
-                <label>Size: </label>
-                <input
-                  type="number"
-                  onChange={(e) => setSize(e.target.value)}
-                />
-              </div>
-              <div className="input-group">
-                <label>Price: </label>
-                <input
-                  type="number"
-                  onChange={(e) => setPrice(e.target.value)}
-                />
-              </div>
-              <button className="update-btn" onClick={handleNewOrderSubmit}>
-                Submit Order
+              <button className="update-btn" onClick={handleCreateInstrument}>
+                Submit Instrument
               </button>
               <button
                 className="cancel-edit-btn"
-                onClick={() => setSubmittingNewOrder(false)}
+                onClick={() => setSubmittingNewInstrument(false)}
               >
                 Cancel
               </button>

@@ -31,14 +31,26 @@ export const tradeOrders = (id, token) =>
 export const logout = (token) =>
   API.post('/api/user/logout', {} , { headers: { Authorization: `Bearer ${token}` } });
 
-export const getInstruments = (token) =>
-  API.get('/api/instrument', { headers: { Authorization: `Bearer ${token}` } });
+export const getInstruments = (params, token) =>
+  API.get('/api/instrument', { headers: { Authorization: `Bearer ${token}` },params });
 
 export const deleteInstrument = (id, token) =>
   API.delete(`/api/instrument/delete-instrument/${id}`, { headers: { Authorization: `Bearer ${token}` } });
 
 export const submitNewInstrument = (data, token) =>
   API.post('/api/instrument/create-instrument', data, { headers: { Authorization: `Bearer ${token}` } });
+
+export const getBalance = (id, token) =>
+  API.get(`/api/accounts/user-balance/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+
+export const getUsers = (token) =>
+  API.get('/api/users', { headers: { Authorization: `Bearer ${token}` } });
+
+export const deposit = (data, token) =>
+  API.put('/api/accounts/deposit', data, { headers: { Authorization: `Bearer ${token}` } });
+
+export const withdraw = (data, token) =>
+  API.put('/api/accounts/withdraw', data, { headers: { Authorization: `Bearer ${token}` } });
 
 
 

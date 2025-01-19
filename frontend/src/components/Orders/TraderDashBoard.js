@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders, logout} from '../../api'; // Import API functions
+import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders, logout, getInstruments} from '../../api'; // Import API functions
 import './styles.css';
 import { useNavigate, Link} from 'react-router-dom';
 import { Select, Space } from 'antd';
@@ -14,10 +14,13 @@ const TraderDashBoard = ({ token, onLogout }) => {
   const [side, setSide] = useState('');
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
-
   const [searchSymbol, setSearchSymbol] = useState('');
   const [searchSide, setSearchSide] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [instruments, setInstruments] = useState([]);
+  const [symbolOptions, setSymbolOption] = useState([]);
+
+
 
    const navigate = useNavigate();
 
@@ -30,9 +33,38 @@ const TraderDashBoard = ({ token, onLogout }) => {
     }
   };
 
+  // fetch instrument from the database
+    const fetchInstruments = async () => {
+      try {
+        const { data } = await getInstruments({instrumentType: "COMMODITY" },token);
+        setInstruments(data.instruments);
+      } catch (error) {
+        console.log(error)
+        alert('Error fetching your instruments.');
+      }
+    };
+
   useEffect(() => {
     fetchOrders();
   }, [token]);
+
+    useEffect(() => {
+      fetchInstruments();
+    }, [token]);
+
+  useEffect(() => {
+    let symbolOptionList = [
+      { value: '', label: 'select symbol'}
+    ]
+  
+    for (const instrument of instruments) {
+      symbolOptionList.push(
+        {value: instrument.symbol, label: instrument.symbol}
+      )
+    }
+  
+    setSymbolOption(symbolOptionList);
+  }, [instruments]);
 
   const handleCancel = async (orderId) => {
     try {
@@ -185,13 +217,11 @@ const TraderDashBoard = ({ token, onLogout }) => {
               <Select
                 defaultValue=""
                 style={{ width: 120 }}
-                onChange={handleSearchSymbolChange}
-                options={[
-                  { value: 'GOOGLE', label: 'GOOGLE' },
-                  { value: 'APPLE', label: 'APPLE' },
-                  { value: 'AMAZON', label: 'AMAZON' },
-                ]}
-              />
+                onChange={ (value) => {
+                  handleSearchSymbolChange(value)
+                }}
+                options={symbolOptions}> 
+              </Select>
             </div>
             <div className="input-group">
               <label>Enter Side: </label>
@@ -248,7 +278,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
         </div>
       </div>
 
-      {/* Left section: Your Orders */}
+      {/* right section: Your Orders */}
       <div className="right-section">
         <div className="order-container">
           <div className="header-row">
@@ -337,13 +367,11 @@ const TraderDashBoard = ({ token, onLogout }) => {
                 <Select
                   defaultValue=""
                   style={{ width: 120 }}
-                  onChange={handleSymbolChange}
-                  options={[
-                    { value: 'GOOGLE', label: 'GOOGLE' },
-                    { value: 'APPLE', label: 'APPLE' },
-                    { value: 'AMAZON', label: 'AMAZON' },
-                  ]}
-                />
+                  onChange={ (value) => {
+                    handleSymbolChange(value)
+                  }}
+                  options={symbolOptions}> 
+              </Select>
               </div>
               <div className="input-group">
                 <label>Side: </label>

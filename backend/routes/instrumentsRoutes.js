@@ -143,34 +143,28 @@ router.get('/', async (req, res) => {
         const payload = jwt.verify(token, 'SECRET');
         console.log("payload: ",payload)
 
-        const instruments = await Instruments.find({});
-        console.log("Instruments", instruments);
+        const {instrumentType} = req.query;
 
-
-        if (!instruments) {
-            res.status(500).json({ error: "Instrument does not exist"});
-            return
+        let queryjson = {
+            instrumentType
         }
+
+        if(!instrumentType) {
+            queryjson = {};
+        }
+        
+        console.log(queryjson)
+        const instruments = await Instruments.find(queryjson);
 
         res.status(200).json({
             status: "Success",
-            message: "Instruments get successfuly",
             instruments
-        });
-
+        })
 
     } catch (error) {
         console.log(error)
         res.status(500).json({ error: error.message });
     }
 })
-
-//adjust user balance endpoint
-router.put('/balance/:id', async (req, res) => { 
-    const{userId, symbol, balance} = req.body;
-
-
-});
-
 
 module.exports = router;

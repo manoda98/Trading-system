@@ -5,7 +5,7 @@ const orderSchema = new mongoose.Schema({
     userId: { type: String, required: true},
     size: { type: Number, required: true},
     price: { type: Number, required: true},
-    symbol: { type: String, enum: ["GOOGLE", "APPLE", "AMAZON"], required: true},
+    symbol: { type: String, required: true},
     state: { type: String, required: true}
 });
 

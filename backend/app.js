@@ -3,6 +3,8 @@ const mongoose = require("mongoose")
 const orderRoutes = require('./routes/ordersRoutes');
 const authenticationRoutes = require('./routes/authenticationRoutes');
 const instrumentRoutes = require('./routes/instrumentsRoutes');
+const accountsRoutes = require('./routes/accountsRoutes');
+const usersRoutes = require('./routes/usersRoutes');
 const cors = require('cors')
 
 const app = express();
@@ -22,6 +24,9 @@ app.use(express.json());
 app.use('/api/order', orderRoutes);
 app.use('/api/user', authenticationRoutes);
 app.use('/api/instrument', instrumentRoutes);
+app.use('/api/accounts', accountsRoutes); 
+app.use('/api/users', usersRoutes); 
+
 
  
 const PORT = process.env.PORT || 5000;

@@ -17,7 +17,13 @@ if (process.env.MONGO_HOST) {
     mongoHost = "localhost";
 }
 
-mongoose.connect(`mongodb://${mongoHost}:27017/trading`)
+// mongoose.connect(`mongodb://${mongoHost}:27017/trading`)
+
+mongoose.connect(`mongodb://${mongoHost}:27017`, {
+    dbName: "trading",
+    user: "admin",
+    pass: "password"
+})
 
 app.use(express.json());
 

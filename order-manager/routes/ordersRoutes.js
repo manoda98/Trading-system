@@ -23,7 +23,8 @@ router.post('/submit', async (req, res) => {
         });
         return;
       }
-      
+    
+    //send to matching engine  
     try {
         console.log("Request received on submit. Request body")
         console.log(req.body)
@@ -48,30 +49,7 @@ router.post('/submit', async (req, res) => {
         }
 
         const payload = jwt.verify(token, 'SECRET');
-        console.log(payload)
-
-        const newOrder = {
-            userId: payload.userId,
-            side: req.body.side, 
-            size: req.body.size, 
-            price: req.body.price, 
-            symbol: req.body.symbol, 
-            state: "NEW" 
-        }
-        const order = new Order(newOrder);
-        const savedOrder = await order.save();
-
-        res.status(201).json({
-            status: "Success", 
-            order: savedOrder
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-
-    //send to matching engine
-    try {
-        const payload = jwt.verify(token, 'SECRET');
+        console.log(payload);
         const orderId = uuidv4();
 
         try {
@@ -103,8 +81,8 @@ router.post('/submit', async (req, res) => {
             }
         }
     } catch (error) {
-        res.status(500).json({ error: error.message});
-    }
+        res.status(500).json({ error: error.message });
+    }    
 });
 
 //cancel order 
@@ -301,10 +279,22 @@ router.put('/update/:id', async (req, res) => {
     try {
         const response = await sendRequest('ORDER_MODIFY', {
             orderId: id,
-            userId: payload.userId
-        })
+            userId: payload.userId,
+            newSize: parseFloat(size),
+            newPrice: parseFloat(price)
+        });
+
+        res.status(200).json({
+            status: "Success",
+            message: "Order updated successfully",
+            order: response
+        });
     } catch (error) {
-        
+        if (error.message === 'Request timeout') {
+            res.status(504).json({ error: 'Request timeout' });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 
@@ -348,7 +338,7 @@ router.get('/search/own', async (req, res) => {
     } catch (error) {
         res.status(500).json({error: error.message});
     }
-})
+});
 
 //Search other orders
 router.get('/search', async (req, res) => {

@@ -116,56 +116,6 @@ router.put('/cancel/:id', async (req, res) => {
         const {id} = req.params;
         console.log(id)
 
-        const order = await Order.findById(id);
-        console.log(order)
-
-        if (!order) {
-            res.status(500).json({ error: "Order does not exist"});
-            return
-        }
-
-        if(order.state === "CANCELLED") {
-            res.status(200).json({
-                error: "Can't cancel alredy cancelled order."
-            });
-            return
-        }
-        
-        if(order.state === "TRADED") {
-            res.status(200).json({
-                error: "Can't cancel traded order."
-            });
-            return
-        }
-
-        if (order.userId == payload.userId) {
-
-            const canceledOrder = await Order.findByIdAndUpdate(
-                id,
-                {$set: { state: "CANCELLED"}},
-                {new: true, runValidators: true}
-            );
-    
-            res.status(200).json({
-                status: "Success",
-                message: "Oreder canceled successfully",
-                order: canceledOrder
-            });
-
-        }
-        else {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
-
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ error: error.message });
-    }
-
-    try {
         const response = await sendRequest('ORDER_CANCEL', {
             orderId: id,
             userId: payload.userId
@@ -176,6 +126,7 @@ router.put('/cancel/:id', async (req, res) => {
             message: "Order cancelled successfully",
             order: response
         });
+
     } catch (error) {
         if (error.message === 'Request timeout') {
             res.status(504).json({ error: 'Request timeout' });

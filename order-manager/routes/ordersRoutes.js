@@ -174,77 +174,23 @@ router.put('/update/:id', async (req, res) => {
         const {id} = req.params;
         const {size, price} = req.body;
 
-        const order = await Order.findById(id);
-        console.log(order)
-
-        if (!order) {
-            res.status(500).json({ error: "Order does not exist"});
-            return
-        }
-
-        if (order.state === "CANCELLED") {
-            res.status(200).json({
-                error: "Can't modify cancelled order."
-            });
-            return
-        }
-
-        if (order.state === "TRADED") {
-            res.status(200).json({
-                error: "Can't modify traded order."
-            });
-            return
-        }
-
-        if (order.userId == payload.userId) {
-            const updateData = {
-                state: "AMENDED"
-            };
-            if (size !== undefined) updateData.size = size;
-            if (price !== undefined) updateData.price = price;
-    
-            const updatedOrder = await Order.findByIdAndUpdate(
-                id,
-                { $set: updateData },
-                { new: true, runValidators: true }
-            );
-    
-            res.status(200).json({
-                status: "Success",
-                message: "Order updated successfully",
-                order: updatedOrder
-            });
-        }
-
-        else {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
-
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-
-    try {
         const response = await sendRequest('ORDER_MODIFY', {
             orderId: id,
             userId: payload.userId,
             newSize: parseFloat(size),
             newPrice: parseFloat(price)
         });
-
+    
         res.status(200).json({
-            status: "Success",
-            message: "Order updated successfully",
-            order: response
+        status: "Success",
+        message: "Order updated successfully",
+        order: response
         });
     } catch (error) {
         if (error.message === 'Request timeout') {
             res.status(504).json({ error: 'Request timeout' });
         } else {
-            res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message });
         }
     }
 });
@@ -277,15 +223,14 @@ router.get('/search/own', async (req, res) => {
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)
 
-        const userId = payload.userId;
-        
-        const order = await Order.find({userId});
-        console.log(order)
+        const response = await sendRequest('QUERY_ORDERS', {
+            userId: payload.userId
+        });
 
         res.status(200).json({
             status: "Success",
-            orders: order
-        })
+            orders: response.orders
+        });
     } catch (error) {
         res.status(500).json({error: error.message});
     }
@@ -320,33 +265,18 @@ router.get('/search', async (req, res) => {
         const payload = jwt.verify(token, 'SECRET');
         console.log(payload)
 
-        const userId = payload.userId
-        console.log(userId)
-        const { symbol,side } = req.query;
-
-        const queryjson = {
-            symbol, 
-            side,
-            userId: {$ne: userId}
-        }
-        console.log(queryjson)
-        const order = await Order.find(queryjson);
-
-        if(!symbol || !side) {
-            res.status(400).json({
-                message: 'Symbol and side required in query params'
-            });
-            return
-        }
+        const response = await sendRequest('QUERY_ORDERS', {
+            userId: payload.userId
+        });
 
         res.status(200).json({
-            status: "Success",
-            orders: order
-        })
+        status: "Success",
+        orders: response.orders
+        });
     } catch (error) {
         res.status(500).json({error: error.message});
     }
-})
+});
 
 //Trade endpoint
 router.put('/trade/:id', async (req, res) => {

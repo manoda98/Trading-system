@@ -4,6 +4,8 @@ const Order = require("../model/order")
 const jwt = require('jsonwebtoken');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { isBlacklisted } = require('../model/tokenBlacklist');
+const { sendRequest } = require('./kafka/client');
+const { v4: uuidv4 } = require('uuid');
 
 // Create Order
 router.post('/submit', async (req, res) => {
@@ -65,6 +67,43 @@ router.post('/submit', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+
+    //send to matching engine
+    try {
+        const payload = jwt.verify(token, 'SECRET');
+        const orderId = uuidv4();
+
+        try {
+           const response = await sendRequest('ORDER_SUBMIT', {
+            orderId,
+            userId: payload.userId,
+            symbol,
+            side,
+            price: parseFloat(price),
+            size: parseFloat(size)
+           });
+
+           //response from matching engine
+           res.status(201).json({
+            status: "Success",
+            order: {
+                orderId: response.orderId,
+                status: response.status,
+                filledQuantity: response.filledQuantity || 0,
+                remainingQuantity: response.remainingQuantity || size,
+                trades: response.trades || []
+            }
+           });
+        } catch (error) {
+            if (error.message === 'Request timeout') {
+                res.status(504).json({ error: 'Request timeout' });
+            } else {
+                res.status(500).json({ error: error.message});
+            }
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message});
     }
 });
 
@@ -146,6 +185,25 @@ router.put('/cancel/:id', async (req, res) => {
     } catch (error) {
         console.log(error)
         res.status(500).json({ error: error.message });
+    }
+
+    try {
+        const response = await sendRequest('ORDER_CANCEL', {
+            orderId: id,
+            userId: payload.userId
+        });
+
+        res.status(200).json({
+            status: "Success",
+            message: "Order cancelled successfully",
+            order: response
+        });
+    } catch (error) {
+        if (error.message === 'Request timeout') {
+            res.status(504).json({ error: 'Request timeout' });
+        } else {
+            res.status(500).json({ error: error.message});
+        }
     }
 });
 
@@ -238,6 +296,15 @@ router.put('/update/:id', async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+
+    try {
+        const response = await sendRequest('ORDER_MODIFY', {
+            orderId: id,
+            userId: payload.userId
+        })
+    } catch (error) {
+        
     }
 });
 

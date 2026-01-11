@@ -5,7 +5,8 @@ const authenticationRoutes = require('./routes/authenticationRoutes');
 const instrumentRoutes = require('./routes/instrumentsRoutes');
 const accountsRoutes = require('./routes/accountsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
-const cors = require('cors')
+const cors = require('cors');
+const { initialize } = require('./kafka/client')
 
 const app = express();
 app.use(cors())
@@ -36,4 +37,7 @@ app.use('/api/users', usersRoutes);
 
  
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, async () => {
+    console.log(`Server running on port ${PORT}`);
+    await initialize();
+} );

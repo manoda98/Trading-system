@@ -4,7 +4,7 @@ const Order = require("../model/order")
 const jwt = require('jsonwebtoken');
 const ObjectId = require('mongoose').Types.ObjectId;
 const { isBlacklisted } = require('../model/tokenBlacklist');
-const { sendRequest } = require('./kafka/client');
+const { sendRequest } = require('../kafka/client');
 const { v4: uuidv4 } = require('uuid');
 
 // Create Order

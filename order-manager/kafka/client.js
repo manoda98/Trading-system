@@ -2,7 +2,7 @@ const { Kafka } = require('kafkajs');
 const { v4: uuidv4 } = require('uuid');
 
 const kafka = new Kafka({
-    cilentId: 'order-manager',
+    clientId: 'order-manager',
     brokers: ['localhost:9092'],
     retry: {
         initialRetryTime: 100,

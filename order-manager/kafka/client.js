@@ -78,9 +78,16 @@ async function sendRequest(messageType, payload, timeout = 15000) {
             }
         });
 
+        console.log("msg for kafka ", JSON.stringify({
+                    messageType,
+                    requestId,
+                    timestamp: new Date().toISOString(),
+                    payload
+                }) );
+
         producer.send({
             topic: 'ME_IN',
-            message: [{
+            messages: [{
                 key: requestId,
                 value: JSON.stringify({
                     messageType,
@@ -90,6 +97,7 @@ async function sendRequest(messageType, payload, timeout = 15000) {
                 })
             }]
         }).catch((error) => {
+            console.error(error);
             pendingRequests.delete(requestId);
             clearTimeout(timeoutId);
             reject(error);

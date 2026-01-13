@@ -53,7 +53,8 @@ router.post('/submit', async (req, res) => {
         const orderId = uuidv4();
 
         try {
-           const response = await sendRequest('ORDER_SUBMIT', {
+            console.log("Before sending kafka msg");
+            const response = await sendRequest('ORDER_SUBMIT', {
             orderId,
             userId: payload.userId,
             symbol,

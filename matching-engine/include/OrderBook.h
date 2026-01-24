@@ -7,6 +7,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <functional> 
 
 class OrderBook {
     private:
@@ -19,10 +20,10 @@ class OrderBook {
         std::map<double, std::queue<Order>, std::less<double>> sellOrders;
 
         //Map orderid price for fast lookup
-        std::map<std::string,double> orderPriceMap;
+        //std::map<std::string,double> orderPriceMap;
 
         std::string generateTradeId();
-        bool removeOrder(const std::string& orderId, bool isBuy);
+        //bool removeOrder(const std::string& orderId, bool isBuy);
 
     public:
         OrderBook(const std::string& symbol);
@@ -31,13 +32,13 @@ class OrderBook {
         std::vector<Trade> addOrder(const Order& order);
 
         //cancel order
-        bool cancelOrder(const std::string& orderId);
+        //bool cancelOrder(const std::string& orderId);
 
         //modify order
-        std::vector<Trade> modifyOrder(const std::string& orderId, double newSize, double newPrice);
+        //std::vector<Trade> modifyOrder(const std::string& orderId, double newSize, double newPrice);
 
-        double getBestBid() const;
-        double getBestAsk() const;
+        //double getBestBid() const;
+        //double getBestAsk() const;
 };
 
 #endif

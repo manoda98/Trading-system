@@ -2,6 +2,16 @@
 #include <random>
 #include <algorithm>
 
+// constructor
+OrderBook::OrderBook(const std::string& sym)
+    : symbol(sym) {}
+
+// simple trade id generator (TEST ONLY)
+std::string OrderBook::generateTradeId() {
+    static int counter = 0;
+    return "T" + std::to_string(++counter);
+}
+
 std::vector<Trade> OrderBook::addOrder(const Order& order) {
     std::vector<Trade> trades;
     Order workingOrder = order;
@@ -18,6 +28,7 @@ std::vector<Trade> OrderBook::addOrder(const Order& order) {
             }
 
             auto& sellQueue = bestAskIt->second;
+
             if (sellQueue.empty()) {
                 sellOrders.erase(bestAskIt);
                 continue;
@@ -42,7 +53,7 @@ std::vector<Trade> OrderBook::addOrder(const Order& order) {
             sellOrder.remainingSize -= tradeQuantity;
 
             if (sellOrder.isFilled()) {
-                orderPriceMap.erase(sellOrder.orderId);
+                //orderPriceMap.erase(sellOrder.orderId);
                 sellQueue.pop();
                 if (sellQueue.empty()) {
                     sellOrders.erase(bestAskIt);
@@ -51,7 +62,7 @@ std::vector<Trade> OrderBook::addOrder(const Order& order) {
         }
         if (!workingOrder.isFilled()) {
             buyOrders[workingOrder.price].push(workingOrder);
-            orderPriceMap[workingOrder.orderId] = workingOrder.price;
+            //orderPriceMap[workingOrder.orderId] = workingOrder.price;
         }
     } else {
         while (!workingOrder.isFilled() && !buyOrders.empty()) {
@@ -87,7 +98,7 @@ std::vector<Trade> OrderBook::addOrder(const Order& order) {
             buyOrder.remainingSize -= tradeQuantity;
 
             if (buyOrder.isFilled()) {
-                orderPriceMap.erase(buyOrder.orderId);
+                //orderPriceMap.erase(buyOrder.orderId);
                 buyQueue.pop();
                 if (buyQueue.empty()) {
                     buyOrders.erase(bestBidIt);
@@ -96,7 +107,7 @@ std::vector<Trade> OrderBook::addOrder(const Order& order) {
         }
         if ( !workingOrder.isFilled()) {
             sellOrders[workingOrder.price].push(workingOrder);
-            orderPriceMap[workingOrder.orderId] = workingOrder.price;
+            //orderPriceMap[workingOrder.orderId] = workingOrder.price;
         }
     }
 

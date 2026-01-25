@@ -1,27 +1,29 @@
-Intoduction
+# Intoduction
 
 This project is a high-performance trading system built with a C++ in-memory matching engine and a Node.js order manager, communicating through Apache Kafka using a synchronous request–response model.
 
-Architecture Overview
+# Architecture Overview
 
-Frontend (React): User interface
+**Frontend (React)**: User interface
 
-Order Manager (Node.js / Express): API gateway, validation, Kafka producer/consumer
+**Order Manager (Node.js / Express)**: API gateway, validation, Kafka producer/consumer
 
-Matching Engine (C++): Order matching, positions, trades, snapshots
+**Matching Engine (C++)**: Order matching, positions, trades, snapshots
 
-Kafka: Event backbone between services
+**Kafka**: Event backbone between services
 
-MongoDB: Users and instruments only (no trading state)
+**MongoDB**: Users and instruments only (no trading state)
 
-C++ Matching Engine with in-memory order books and positions
+# Key Highlights
 
-Kafka-based communication (ME_IN / ME_OUT)
+- C++ Matching Engine with in-memory order books and positions
 
-Synchronous order processing with 15s timeout
+- Kafka-based communication (ME_IN / ME_OUT)
 
-Snapshot-based recovery every 10 minutes
+- Synchronous order processing with 15s timeout
 
-Unified position model for all assets (BTC, USD, ETH, etc.)
+- Snapshot-based recovery every 10 minutes
 
-Strict balance validation (no negative balances)
+- Unified position model for all assets (BTC, USD, ETH, etc.)
+
+- Strict balance validation (no negative balances)

@@ -3,42 +3,41 @@
 
 #include "Order.h"
 #include "Trade.h"
+
 #include <map>
-#include <queue>
+#include <deque>
 #include <string>
 #include <vector>
-#include <functional> 
+#include <functional>
 
 class OrderBook {
-    private:
-        std::string symbol;
+private:
+    std::string symbol;
 
-        //buy orders: highest price first
-        std::map<double, std::queue<Order>, std::greater<double>> buyOrders;
+    // BUY: highest price first
+    std::map<double, std::deque<Order>, std::greater<double>> buyOrders;
 
-        //sell orders: lowest price first
-        std::map<double, std::queue<Order>, std::less<double>> sellOrders;
+    // SELL: lowest price first
+    std::map<double, std::deque<Order>, std::less<double>> sellOrders;
 
-        //Map orderid price for fast lookup
-        //std::map<std::string,double> orderPriceMap;
+    std::string generateTradeId();
 
-        std::string generateTradeId();
-        //bool removeOrder(const std::string& orderId, bool isBuy);
+public:
+    explicit OrderBook(const std::string& sym);
 
-    public:
-        OrderBook(const std::string& symbol);
+    // Add order and match. Updates maker/taker remaining sizes inside stored orders.
+    std::vector<Trade> addOrder(const Order& incoming);
 
-        //add order and return trades if matched
-        std::vector<Trade> addOrder(const Order& order);
+    bool cancelOrder(const std::string& orderId, Order& cancelledOut);
+    bool modifyOrder(const std::string& orderId, double newSize, double newPrice, Order& modifiedOut);
 
-        //cancel order
-        //bool cancelOrder(const std::string& orderId);
-
-        //modify order
-        //std::vector<Trade> modifyOrder(const std::string& orderId, double newSize, double newPrice);
-
-        //double getBestBid() const;
-        //double getBestAsk() const;
+    // Query OPEN orders from this book
+    std::vector<Order> getOpenOrdersFiltered(
+        const std::string& requesterUserId,
+        bool ownOnly,
+        const std::string& sideFilter,
+        const std::string& symbolFilter
+    ) const;
 };
 
 #endif

@@ -1,116 +1,240 @@
 #include "OrderBook.h"
-#include <random>
 #include <algorithm>
 
-// constructor
-OrderBook::OrderBook(const std::string& sym)
-    : symbol(sym) {}
+OrderBook::OrderBook(const std::string& sym) : symbol(sym) {}
 
-// simple trade id generator (TEST ONLY)
 std::string OrderBook::generateTradeId() {
-    static int counter = 0;
+    static long long counter = 0;
     return "T" + std::to_string(++counter);
 }
 
-std::vector<Trade> OrderBook::addOrder(const Order& order) {
+std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
     std::vector<Trade> trades;
-    Order workingOrder = order;
-    workingOrder.remainingSize = order.size;
 
-    if (order.side == OrderSide::BUY) {
-        //try to match with sell orders
-        while (!workingOrder.isFilled() && !sellOrders.empty()) {
+    Order working = incoming;
+    if (working.remainingSize <= 0) working.remainingSize = working.size;
+
+    if (working.side == OrderSide::BUY) {
+        // match against best asks
+        while (!working.isFilled() && !sellOrders.empty()) {
             auto bestAskIt = sellOrders.begin();
             double bestAskPrice = bestAskIt->first;
 
-            if (workingOrder.price < bestAskPrice) {
-                break;
-            }
+            // buy can only match if buyPrice >= bestAsk
+            if (working.price < bestAskPrice) break;
 
-            auto& sellQueue = bestAskIt->second;
+            auto& dq = bestAskIt->second;
+            if (dq.empty()) { sellOrders.erase(bestAskIt); continue; }
 
-            if (sellQueue.empty()) {
-                sellOrders.erase(bestAskIt);
-                continue;
-            }
+            Order& makerSell = dq.front();
 
-            Order& sellOrder = sellQueue.front();
+            double qty = std::min(working.remainingSize, makerSell.remainingSize);
+            double px = makerSell.price; // maker price
 
-            double tradeQuantity = std::min(workingOrder.remainingSize, sellOrder.remainingSize);
-            double tradePrice = sellOrder.price;
-            
-            Trade trade;
-            trade.tradeId = generateTradeId();
-            trade.buyOrderId = workingOrder.orderId;
-            trade.sellOrderId = sellOrder.orderId;
-            trade.symbol = workingOrder.symbol;
-            trade.price = tradePrice;
-            trade.quantity = tradeQuantity;
-            trade.timestamp = std::chrono::system_clock::now();
-            trades.push_back(trade);
+            Trade t;
+            t.tradeId = generateTradeId();
+            t.symbol = working.symbol;
+            t.price = px;
+            t.quantity = qty;
+            t.timestamp = std::chrono::system_clock::now();
 
-            workingOrder.remainingSize -= tradeQuantity;
-            sellOrder.remainingSize -= tradeQuantity;
+            t.buyOrderId = working.orderId;
+            t.buyUserId  = working.userId;
 
-            if (sellOrder.isFilled()) {
-                //orderPriceMap.erase(sellOrder.orderId);
-                sellQueue.pop();
-                if (sellQueue.empty()) {
-                    sellOrders.erase(bestAskIt);
-                }
+            t.sellOrderId = makerSell.orderId;
+            t.sellUserId  = makerSell.userId;
+
+            trades.push_back(t);
+
+            working.remainingSize -= qty;
+            makerSell.remainingSize -= qty;
+
+            // maker filled -> remove
+            if (makerSell.isFilled()) {
+                dq.pop_front();
+                if (dq.empty()) sellOrders.erase(bestAskIt);
             }
         }
-        if (!workingOrder.isFilled()) {
-            buyOrders[workingOrder.price].push(workingOrder);
-            //orderPriceMap[workingOrder.orderId] = workingOrder.price;
+
+        if (!working.isFilled()) {
+            buyOrders[working.price].push_back(working);
         }
+
     } else {
-        while (!workingOrder.isFilled() && !buyOrders.empty()) {
+        // SELL: match against best bids
+        while (!working.isFilled() && !buyOrders.empty()) {
             auto bestBidIt = buyOrders.begin();
             double bestBidPrice = bestBidIt->first;
 
-            if (workingOrder.price > bestBidPrice) {
-                break;
-            }
+            // sell can only match if sellPrice <= bestBid
+            if (working.price > bestBidPrice) break;
 
-            auto& buyQueue = bestBidIt->second;
-            if (buyQueue.empty()) {
-                buyOrders.erase(bestBidIt);
-                continue;
-            }
+            auto& dq = bestBidIt->second;
+            if (dq.empty()) { buyOrders.erase(bestBidIt); continue; }
 
-            Order& buyOrder = buyQueue.front();
+            Order& makerBuy = dq.front();
 
-            double tradeQuantity = std::min(workingOrder.remainingSize, buyOrder.remainingSize);
-            double tradePrice = buyOrder.price;
+            double qty = std::min(working.remainingSize, makerBuy.remainingSize);
+            double px = makerBuy.price; // maker price
 
-            Trade trade;
-            trade.tradeId = generateTradeId();
-            trade.buyOrderId = buyOrder.orderId;
-            trade.sellOrderId = workingOrder.orderId;
-            trade.symbol = workingOrder.symbol;
-            trade.price = tradePrice;
-            trade.quantity = tradeQuantity;
-            trade.timestamp = std::chrono::system_clock::now();
-            trades.push_back(trade);
+            Trade t;
+            t.tradeId = generateTradeId();
+            t.symbol = working.symbol;
+            t.price = px;
+            t.quantity = qty;
+            t.timestamp = std::chrono::system_clock::now();
 
-            workingOrder.remainingSize -= tradeQuantity;
-            buyOrder.remainingSize -= tradeQuantity;
+            t.buyOrderId = makerBuy.orderId;
+            t.buyUserId  = makerBuy.userId;
 
-            if (buyOrder.isFilled()) {
-                //orderPriceMap.erase(buyOrder.orderId);
-                buyQueue.pop();
-                if (buyQueue.empty()) {
-                    buyOrders.erase(bestBidIt);
-                }
+            t.sellOrderId = working.orderId;
+            t.sellUserId  = working.userId;
+
+            trades.push_back(t);
+
+            working.remainingSize -= qty;
+            makerBuy.remainingSize -= qty;
+
+            if (makerBuy.isFilled()) {
+                dq.pop_front();
+                if (dq.empty()) buyOrders.erase(bestBidIt);
             }
         }
-        if ( !workingOrder.isFilled()) {
-            sellOrders[workingOrder.price].push(workingOrder);
-            //orderPriceMap[workingOrder.orderId] = workingOrder.price;
+
+        if (!working.isFilled()) {
+            sellOrders[working.price].push_back(working);
         }
     }
 
     return trades;
+}
 
+bool OrderBook::cancelOrder(const std::string& orderId, Order& cancelledOut) {
+    // BUY side
+    for (auto it = buyOrders.begin(); it != buyOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                cancelledOut = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) buyOrders.erase(it);
+                return true;
+            }
+        }
+        ++it;
+    }
+
+    // SELL side
+    for (auto it = sellOrders.begin(); it != sellOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                cancelledOut = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) sellOrders.erase(it);
+                return true;
+            }
+        }
+        ++it;
+    }
+
+    return false;
+}
+
+bool OrderBook::modifyOrder(const std::string& orderId, double newSize, double newPrice, Order& modifiedOut) {
+    if (newSize <= 0 || newPrice <= 0) return false;
+
+    Order found;
+    bool foundAny = false;
+
+    // try cancel from BUY
+    for (auto it = buyOrders.begin(); it != buyOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                found = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) buyOrders.erase(it);
+                foundAny = true;
+                goto APPLY;
+            }
+        }
+        ++it;
+    }
+
+    // try cancel from SELL
+    for (auto it = sellOrders.begin(); it != sellOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                found = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) sellOrders.erase(it);
+                foundAny = true;
+                goto APPLY;
+            }
+        }
+        ++it;
+    }
+
+APPLY:
+    if (!foundAny) return false;
+
+    // beginner rule: modifying resets remaining size to newSize
+    found.size = newSize;
+    found.price = newPrice;
+    found.remainingSize = newSize;
+    found.status = OrderStatus::PENDING;
+
+    modifiedOut = found;
+
+    // Put back (and match)
+    addOrder(found);
+    return true;
+}
+
+std::vector<Order> OrderBook::getOpenOrdersFiltered(
+    const std::string& requesterUserId,
+    bool ownOnly,
+    const std::string& sideFilter,
+    const std::string& symbolFilter
+) const {
+    std::vector<Order> out;
+
+    auto wantSide = [&](OrderSide s) {
+        if (sideFilter.empty()) return true;
+        if (sideFilter == "BUY") return s == OrderSide::BUY;
+        if (sideFilter == "SELL") return s == OrderSide::SELL;
+        return true;
+    };
+
+    auto wantSymbol = [&](const Order& o) {
+        if (symbolFilter.empty()) return true;
+        return o.symbol == symbolFilter;
+    };
+
+    auto wantUser = [&](const Order& o) {
+        if (ownOnly) return o.userId == requesterUserId;
+        return o.userId != requesterUserId; 
+    };
+
+    // BUY
+    for (const auto& [px, dq] : buyOrders) {
+        for (const auto& o : dq) {
+            if (!o.isFilled() && wantSide(o.side) && wantSymbol(o) && wantUser(o)) {
+                out.push_back(o);
+            }
+        }
+    }
+
+    // SELL
+    for (const auto& [px, dq] : sellOrders) {
+        for (const auto& o : dq) {
+            if (!o.isFilled() && wantSide(o.side) && wantSymbol(o) && wantUser(o)) {
+                out.push_back(o);
+            }
+        }
+    }
+
+    return out;
 }

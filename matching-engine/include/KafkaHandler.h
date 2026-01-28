@@ -3,21 +3,42 @@
 
 #include <string>
 #include <functional>
+#include <memory>
 #include <librdkafka/rdkafkacpp.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
+struct ConsumedMessageInfo {
+    json data;
+    int64_t offset{-1};
+    int32_t partition{0};
+    std::string key; 
+};
+
+
+class DeliveryReportCb : public RdKafka::DeliveryReportCb {
+public:
+    void dr_cb(RdKafka::Message& message) override;
+};
+
 class KafkaHandler {
 private:
     std::string brokers;
-    std::string topic;
-    RdKafka::KafkaConsumer* consumer;
+    RdKafka::KafkaConsumer* consumer{nullptr};
+    RdKafka::Producer* producer{nullptr};
+    DeliveryReportCb drCb; 
 
 public:
-    KafkaHandler(const std::string& brokers, const std::string& topic);
+    explicit KafkaHandler(const std::string& brokers);
     ~KafkaHandler();
-    void consumeMessages(std::function<void(const json&)> callback);
+
+    void consume(const std::string& topic, std::function<void(const ConsumedMessageInfo&)> callback);
+
+
+    void produce(const std::string& topic, const json& payload);
+
+    void produce(const std::string& topic, const std::string& key, const json& payload);
 };
 
 #endif

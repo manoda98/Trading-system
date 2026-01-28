@@ -1,188 +1,240 @@
 #include "OrderBook.h"
 #include <algorithm>
 
-OrderBook::OrderBook(std::string sym) : symbol(std::move(sym)) {}
+OrderBook::OrderBook(const std::string& sym) : symbol(sym) {}
 
-std::string OrderBook::nextTradeId() {
-    tradeCounter++;
-    return "T" + std::to_string(tradeCounter);
+std::string OrderBook::generateTradeId() {
+    static long long counter = 0;
+    return "T" + std::to_string(++counter);
 }
 
-void OrderBook::eraseEmptyLevel(bool isBuy, double price) {
-    if (isBuy) {
-        auto it = buy.find(price);
-        if (it != buy.end() && it->second.empty()) buy.erase(it);
-    } else {
-        auto it = sell.find(price);
-        if (it != sell.end() && it->second.empty()) sell.erase(it);
-    }
-}
-
-bool OrderBook::hasOrder(const std::string& orderId) const {
-    return index.find(orderId) != index.end();
-}
-
-bool OrderBook::getOrderSidePrice(const std::string& orderId, bool& isBuy, double& price) const {
-    auto it = index.find(orderId);
-    if (it == index.end()) return false;
-    isBuy = it->second.isBuy;
-    price = it->second.price;
-    return true;
-}
-
-std::vector<Trade> OrderBook::addOrder(const Order& in) {
+std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
     std::vector<Trade> trades;
 
-    Order working = in;
-    working.remainingSize = in.remainingSize > 0 ? in.remainingSize : in.size;
+    Order working = incoming;
+    if (working.remainingSize <= 0) working.remainingSize = working.size;
 
     if (working.side == OrderSide::BUY) {
-        // match against best sell
-        while (!working.isFilled() && !sell.empty()) {
-            auto bestAskIt = sell.begin();
+        // match against best asks
+        while (!working.isFilled() && !sellOrders.empty()) {
+            auto bestAskIt = sellOrders.begin();
             double bestAskPrice = bestAskIt->first;
 
+            // buy can only match if buyPrice >= bestAsk
             if (working.price < bestAskPrice) break;
 
             auto& dq = bestAskIt->second;
-            if (dq.empty()) {
-                sell.erase(bestAskIt);
-                continue;
-            }
+            if (dq.empty()) { sellOrders.erase(bestAskIt); continue; }
 
             Order& makerSell = dq.front();
+
             double qty = std::min(working.remainingSize, makerSell.remainingSize);
-            double px  = makerSell.price; // maker price
+            double px = makerSell.price; // maker price
 
             Trade t;
-            t.tradeId = nextTradeId();
-            t.buyOrderId = working.orderId;
-            t.sellOrderId = makerSell.orderId;
-            t.buyUserId = working.userId;
-            t.sellUserId = makerSell.userId;
+            t.tradeId = generateTradeId();
             t.symbol = working.symbol;
             t.price = px;
             t.quantity = qty;
             t.timestamp = std::chrono::system_clock::now();
+
+            t.buyOrderId = working.orderId;
+            t.buyUserId  = working.userId;
+
+            t.sellOrderId = makerSell.orderId;
+            t.sellUserId  = makerSell.userId;
+
             trades.push_back(t);
 
             working.remainingSize -= qty;
             makerSell.remainingSize -= qty;
 
+            // maker filled -> remove
             if (makerSell.isFilled()) {
-                index.erase(makerSell.orderId);
                 dq.pop_front();
-                if (dq.empty()) sell.erase(bestAskIt);
+                if (dq.empty()) sellOrders.erase(bestAskIt);
             }
         }
 
         if (!working.isFilled()) {
-            working.status = OrderStatus::PENDING;
-            buy[working.price].push_back(working);
-            index[working.orderId] = {true, working.price};
+            buyOrders[working.price].push_back(working);
         }
 
     } else {
-        // match against best buy
-        while (!working.isFilled() && !buy.empty()) {
-            auto bestBidIt = buy.begin();
+        // SELL: match against best bids
+        while (!working.isFilled() && !buyOrders.empty()) {
+            auto bestBidIt = buyOrders.begin();
             double bestBidPrice = bestBidIt->first;
 
+            // sell can only match if sellPrice <= bestBid
             if (working.price > bestBidPrice) break;
 
             auto& dq = bestBidIt->second;
-            if (dq.empty()) {
-                buy.erase(bestBidIt);
-                continue;
-            }
+            if (dq.empty()) { buyOrders.erase(bestBidIt); continue; }
 
             Order& makerBuy = dq.front();
+
             double qty = std::min(working.remainingSize, makerBuy.remainingSize);
-            double px  = makerBuy.price;
+            double px = makerBuy.price; // maker price
 
             Trade t;
-            t.tradeId = nextTradeId();
-            t.buyOrderId = makerBuy.orderId;
-            t.sellOrderId = working.orderId;
-            t.buyUserId = makerBuy.userId;
-            t.sellUserId = working.userId;
+            t.tradeId = generateTradeId();
             t.symbol = working.symbol;
             t.price = px;
             t.quantity = qty;
             t.timestamp = std::chrono::system_clock::now();
+
+            t.buyOrderId = makerBuy.orderId;
+            t.buyUserId  = makerBuy.userId;
+
+            t.sellOrderId = working.orderId;
+            t.sellUserId  = working.userId;
+
             trades.push_back(t);
 
             working.remainingSize -= qty;
             makerBuy.remainingSize -= qty;
 
             if (makerBuy.isFilled()) {
-                index.erase(makerBuy.orderId);
                 dq.pop_front();
-                if (dq.empty()) buy.erase(bestBidIt);
+                if (dq.empty()) buyOrders.erase(bestBidIt);
             }
         }
 
         if (!working.isFilled()) {
-            working.status = OrderStatus::PENDING;
-            sell[working.price].push_back(working);
-            index[working.orderId] = {false, working.price};
+            sellOrders[working.price].push_back(working);
         }
     }
 
     return trades;
 }
 
-bool OrderBook::cancelOrder(const std::string& orderId) {
-    auto it = index.find(orderId);
-    if (it == index.end()) return false;
-
-    bool isBuy = it->second.isBuy;
-    double px  = it->second.price;
-
-    if (isBuy) {
-        auto lvl = buy.find(px);
-        if (lvl == buy.end()) { index.erase(it); return false; }
-
-        auto& dq = lvl->second;
-        for (auto d = dq.begin(); d != dq.end(); ++d) {
-            if (d->orderId == orderId) {
-                dq.erase(d);
-                index.erase(it);
-                eraseEmptyLevel(true, px);
+bool OrderBook::cancelOrder(const std::string& orderId, Order& cancelledOut) {
+    // BUY side
+    for (auto it = buyOrders.begin(); it != buyOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                cancelledOut = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) buyOrders.erase(it);
                 return true;
             }
         }
-    } else {
-        auto lvl = sell.find(px);
-        if (lvl == sell.end()) { index.erase(it); return false; }
-
-        auto& dq = lvl->second;
-        for (auto d = dq.begin(); d != dq.end(); ++d) {
-            if (d->orderId == orderId) {
-                dq.erase(d);
-                index.erase(it);
-                eraseEmptyLevel(false, px);
-                return true;
-            }
-        }
+        ++it;
     }
 
-    index.erase(it);
+    // SELL side
+    for (auto it = sellOrders.begin(); it != sellOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                cancelledOut = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) sellOrders.erase(it);
+                return true;
+            }
+        }
+        ++it;
+    }
+
     return false;
 }
 
-void OrderBook::loadFromLevels(
-    const std::map<double, std::deque<Order>, std::greater<double>>& b,
-    const std::map<double, std::deque<Order>, std::less<double>>& s
-) {
-    buy = b;
-    sell = s;
-    index.clear();
+bool OrderBook::modifyOrder(const std::string& orderId, double newSize, double newPrice, Order& modifiedOut) {
+    if (newSize <= 0 || newPrice <= 0) return false;
 
-    for (auto& [px, dq] : buy) {
-        for (auto& o : dq) index[o.orderId] = {true, px};
+    Order found;
+    bool foundAny = false;
+
+    // try cancel from BUY
+    for (auto it = buyOrders.begin(); it != buyOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                found = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) buyOrders.erase(it);
+                foundAny = true;
+                goto APPLY;
+            }
+        }
+        ++it;
     }
-    for (auto& [px, dq] : sell) {
-        for (auto& o : dq) index[o.orderId] = {false, px};
+
+    // try cancel from SELL
+    for (auto it = sellOrders.begin(); it != sellOrders.end(); ) {
+        auto& dq = it->second;
+        for (auto odIt = dq.begin(); odIt != dq.end(); ++odIt) {
+            if (odIt->orderId == orderId && !odIt->isFilled()) {
+                found = *odIt;
+                dq.erase(odIt);
+                if (dq.empty()) sellOrders.erase(it);
+                foundAny = true;
+                goto APPLY;
+            }
+        }
+        ++it;
     }
+
+APPLY:
+    if (!foundAny) return false;
+
+    // beginner rule: modifying resets remaining size to newSize
+    found.size = newSize;
+    found.price = newPrice;
+    found.remainingSize = newSize;
+    found.status = OrderStatus::PENDING;
+
+    modifiedOut = found;
+
+    // Put back (and match)
+    addOrder(found);
+    return true;
+}
+
+std::vector<Order> OrderBook::getOpenOrdersFiltered(
+    const std::string& requesterUserId,
+    bool ownOnly,
+    const std::string& sideFilter,
+    const std::string& symbolFilter
+) const {
+    std::vector<Order> out;
+
+    auto wantSide = [&](OrderSide s) {
+        if (sideFilter.empty()) return true;
+        if (sideFilter == "BUY") return s == OrderSide::BUY;
+        if (sideFilter == "SELL") return s == OrderSide::SELL;
+        return true;
+    };
+
+    auto wantSymbol = [&](const Order& o) {
+        if (symbolFilter.empty()) return true;
+        return o.symbol == symbolFilter;
+    };
+
+    auto wantUser = [&](const Order& o) {
+        if (ownOnly) return o.userId == requesterUserId;
+        return o.userId != requesterUserId; 
+    };
+
+    // BUY
+    for (const auto& [px, dq] : buyOrders) {
+        for (const auto& o : dq) {
+            if (!o.isFilled() && wantSide(o.side) && wantSymbol(o) && wantUser(o)) {
+                out.push_back(o);
+            }
+        }
+    }
+
+    // SELL
+    for (const auto& [px, dq] : sellOrders) {
+        for (const auto& o : dq) {
+            if (!o.isFilled() && wantSide(o.side) && wantSymbol(o) && wantUser(o)) {
+                out.push_back(o);
+            }
+        }
+    }
+
+    return out;
 }

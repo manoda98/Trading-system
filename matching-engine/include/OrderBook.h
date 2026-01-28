@@ -3,45 +3,41 @@
 
 #include "Order.h"
 #include "Trade.h"
+
 #include <map>
 #include <deque>
 #include <string>
 #include <vector>
 #include <functional>
-#include <unordered_map>
 
 class OrderBook {
 private:
     std::string symbol;
 
     // BUY: highest price first
-    std::map<double, std::deque<Order>, std::greater<double>> buy;
+    std::map<double, std::deque<Order>, std::greater<double>> buyOrders;
+
     // SELL: lowest price first
-    std::map<double, std::deque<Order>, std::less<double>> sell;
+    std::map<double, std::deque<Order>, std::less<double>> sellOrders;
 
-    struct IndexEntry { bool isBuy; double price; };
-    std::unordered_map<std::string, IndexEntry> index; // orderId -> (side, price)
-
-    long long tradeCounter{0};
-    std::string nextTradeId();
-
-    void eraseEmptyLevel(bool isBuy, double price);
+    std::string generateTradeId();
 
 public:
-    explicit OrderBook(std::string sym);
+    explicit OrderBook(const std::string& sym);
 
-    std::vector<Trade> addOrder(const Order& order);
-    bool cancelOrder(const std::string& orderId);
-    bool hasOrder(const std::string& orderId) const;
+    // Add order and match. Updates maker/taker remaining sizes inside stored orders.
+    std::vector<Trade> addOrder(const Order& incoming);
 
-    bool getOrderSidePrice(const std::string& orderId, bool& isBuy, double& price) const;
+    bool cancelOrder(const std::string& orderId, Order& cancelledOut);
+    bool modifyOrder(const std::string& orderId, double newSize, double newPrice, Order& modifiedOut);
 
-    const auto& getBuyLevels() const { return buy; }
-    const auto& getSellLevels() const { return sell; }
-    void loadFromLevels(
-        const std::map<double, std::deque<Order>, std::greater<double>>& b,
-        const std::map<double, std::deque<Order>, std::less<double>>& s
-    );
+    // Query OPEN orders from this book
+    std::vector<Order> getOpenOrdersFiltered(
+        const std::string& requesterUserId,
+        bool ownOnly,
+        const std::string& sideFilter,
+        const std::string& symbolFilter
+    ) const;
 };
 
 #endif

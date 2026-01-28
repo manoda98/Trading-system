@@ -22,12 +22,14 @@ const TraderDashBoard = ({ token, onLogout }) => {
 
 
 
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+
+  const getOrderState = (o) => o?.state || o?.status || "PENDING";
 
   const fetchOrders = async () => {
     try {
       const { data } = await searchOwnOrders(token);
-      setOrders(data.orders);
+      setOrders(data.orders || []);
     } catch (error) {
       alert('Error fetching your orders.');
     }
@@ -68,7 +70,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
 
   const handleCancel = async (orderId) => {
     try {
-      const response = await cancelOrder(orderId, token); // Call cancel order API
+      const response = await cancelOrder(orderId, token); 
       console.log(response)
       if (response.data.error) {
         alert(response.data.error)
@@ -76,6 +78,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
       }
 
       alert('Order canceled successfully!');
+
       fetchOrders();
     } catch (error) {
       alert('Error canceling the order.');
@@ -121,7 +124,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
         alert('Both size and price are required!');
         return;
       }
-      const response = await modifyOrder(editingOrder._id, { size: newSize, price: newPrice }, token);
+      const response = await modifyOrder(editingOrder.orderId, { size: newSize, price: newPrice }, token);
       
       if (response.data.error) {
         alert(response.data.error)
@@ -152,22 +155,36 @@ const TraderDashBoard = ({ token, onLogout }) => {
     }
   };
   // handle trading order
-  const handleTrading = async (orderId)=> {
-    try {
-      const response = await tradeOrders(orderId, token); // Call cancel order API
-      
-      if (response.data.error) {
-        alert(response.data.error)
-        return
-      }
 
-      alert('Order traded successfully!');
-      searchOtherOrdersHandler();
-    } catch (error) {
-      console.log(error);
-      alert('Error executing trade.');
+const handleTrading = async (order) => {
+  try {
+    const response = await tradeOrders(
+      {
+        symbol: order.symbol,
+        side: order.side,
+        price: order.price,
+        size: order.remainingSize || order.size  
+      },
+      token
+    );
+
+    if (response.data?.error) {
+      alert(response.data.error);
+      return;
     }
-  };
+
+    alert('Trade sent to matching engine!');
+
+    
+    await fetchOrders();
+    await searchOtherOrdersHandler();
+
+  } catch (error) {
+    console.log(error);
+    alert('Error executing trade.');
+  }
+};
+
 
   //Handle logout
   const handleLogout = async () => {
@@ -257,15 +274,15 @@ const TraderDashBoard = ({ token, onLogout }) => {
                 </thead>
                 <tbody>
                   {searchResults.map((order) => (
-                    <tr key={order._id}>
+                    <tr key={order.orderId}>
                       <td>{order.symbol}</td>
                       <td>{order.side}</td>
                       <td>{order.size}</td>
                       <td>{order.price}</td>
-                      <td>{order.state}</td>
+                      <td>{order.status || order.state || "PENDING"}</td>
                       <button
                         className="trade-btn"
-                        onClick={() => handleTrading(order._id)}
+                        onClick={() => handleTrading(order)}
                       >
                         Trade
                       </button>
@@ -303,7 +320,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
               </thead>
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order._id}>
+                  <tr key={order.orderId}>
                     <td>{order.symbol}</td>
                     <td>{order.side}</td>
                     <td>{order.size}</td>
@@ -312,7 +329,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
                     <td>
                       <button
                         className="cancel-btn"
-                        onClick={() => handleCancel(order._id)}
+                        onClick={() => handleCancel(order.orderId)}
                       >
                         Cancel
                       </button>

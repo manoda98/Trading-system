@@ -198,164 +198,114 @@ router.put('/update/:id', async (req, res) => {
 
 //search own orders(search by Symbol and side )
 router.get('/search/own', async (req, res) => {
-    try {
-        console.log("Request received on search by own. Request params")
-        console.log(req.params)
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ message: 'Unauthorized' });
 
-        const authHeader = req.headers.authorization;
-        console.log(authHeader)
-        if(!authHeader) {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
+    const token = authHeader.split(' ')[1];
+    if (isBlacklisted(token)) return res.status(401).json({ message: 'Unauthorized' });
 
-        const token = authHeader.split(' ')[1];
-        console.log(token)
+    const payload = jwt.verify(token, 'SECRET');
 
-        if (isBlacklisted(token)) {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
+    const response = await sendRequest('QUERY_ORDERS', {
+      userId: payload.userId,
+      ownOnly: true
+    });
 
-        const payload = jwt.verify(token, 'SECRET');
-        console.log(payload)
-
-        const response = await sendRequest('QUERY_ORDERS', {
-            userId: payload.userId
-        });
-
-        res.status(200).json({
-            status: "Success",
-            orders: response.orders
-        });
-    } catch (error) {
-        res.status(500).json({error: error.message});
+    res.status(200).json({
+      status: "Success",
+      orders: response.orders || []
+    });
+  } catch (error) {
+    if (error.message === 'Request timeout') {
+      res.status(504).json({ error: 'Request timeout' });
+    } else {
+      res.status(500).json({ error: error.message });
     }
+  }
 });
+
 
 //Search other orders
 router.get('/search', async (req, res) => {
-    try {
-        console.log("Request received on search by other orders. Request params")
-        console.log(req.params)
-        console.log(req.query)
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ message: 'Unauthorized' });
 
-        const authHeader = req.headers.authorization;
-        console.log(authHeader)
-        if(!authHeader) {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
+    const token = authHeader.split(' ')[1];
+    if (isBlacklisted(token)) return res.status(401).json({ message: 'Unauthorized' });
 
-        const token = authHeader.split(' ')[1];
-        console.log(token)
+    const payload = jwt.verify(token, 'SECRET');
 
-        if (isBlacklisted(token)) {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
+    const symbol = req.query.symbol || "";
+    const side = req.query.side || "";
 
-        const payload = jwt.verify(token, 'SECRET');
-        console.log(payload)
+    const response = await sendRequest('QUERY_ORDERS', {
+      userId: payload.userId,
+      ownOnly: false,    
+      symbol,
+      side
+    });
 
-        const response = await sendRequest('QUERY_ORDERS', {
-            userId: payload.userId
-        });
+    res.status(200).json({
+      status: "Success",
+      orders: response.orders || []
+    });
 
-        res.status(200).json({
-        status: "Success",
-        orders: response.orders
-        });
-    } catch (error) {
-        res.status(500).json({error: error.message});
+  } catch (error) {
+    if (error.message === 'Request timeout') {
+      res.status(504).json({ error: 'Request timeout' });
+    } else {
+      res.status(500).json({ error: error.message });
     }
+  }
 });
 
+
 //Trade endpoint
-router.put('/trade/:id', async (req, res) => {
-    try {
-        console.log("Request received on trade. Request params")
-        console.log(req.params)
+router.post('/trade', async (req, res) => {
+  try {
+    const { symbol, side, price, size } = req.body;
 
-        const authHeader = req.headers.authorization;
-        console.log(authHeader)
-        if(!authHeader) {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
-
-        const token = authHeader.split(' ')[1];
-        console.log(token)
-
-        if (isBlacklisted(token)) {
-            res.status(401).json({
-                message: 'Unauthorized'
-            });
-            return
-        }
-
-        const payload = jwt.verify(token, 'SECRET');
-        console.log(payload)
-
-        const {id} = req.params;
-        console.log(id)
-
-        const order = await Order.findById(id);
-        console.log(order)
-
-        if (!order) {
-            res.status(500).json({ error: "Order does not exist"});
-            return
-        }
-
-        if (order.userId == payload.userId) {
-            res.status(200).json({
-                error: "Cannot trade own order!."
-            });
-            return
-        }
-
-        if (order.state === "CANCELLED") {
-            res.status(200).json({
-                error: "Can't trade cancelled order."
-            });
-            return
-        }
-        
-        if (order.state === "TRADED") {
-            res.status(200).json({
-                error: "Can't trade alredy traded order."
-            });
-            return
-        }
-
-        const tradedOrder = await Order.findByIdAndUpdate(
-            id,
-            {$set: { state: "TRADED"}},
-            {new: true, runValidators: true}
-        );
-
-        res.status(200).json({
-            status: "Success",
-            message: "Traded",
-            order: tradedOrder
-        });
-
-    } catch (error) {
-        res.status(500).json({error: error.message});
+    if (!symbol || !side || !price || !size) {
+      return res.status(400).json({ error: 'symbol, side, price, size are required' });
     }
 
-})
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ message: 'Unauthorized' });
+
+    const token = authHeader.split(' ')[1];
+    if (isBlacklisted(token)) return res.status(401).json({ message: 'Unauthorized' });
+
+    const payload = jwt.verify(token, 'SECRET');
+
+    // ✅ NEW: opposite side
+    const oppositeSide = side === "BUY" ? "SELL" : "BUY";
+    const orderId = uuidv4();
+
+    const response = await sendRequest('ORDER_SUBMIT', {
+      orderId,
+      userId: payload.userId,
+      symbol,
+      side: oppositeSide,
+      price: parseFloat(price),
+      size: parseFloat(size)
+    });
+
+    res.status(200).json({
+      status: "Success",
+      order: response
+    });
+
+  } catch (error) {
+    if (error.message === 'Request timeout') {
+      res.status(504).json({ error: 'Request timeout' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
 
 
 module.exports = router;

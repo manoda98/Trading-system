@@ -4,39 +4,29 @@
 #include "OrderBook.h"
 #include "Order.h"
 #include "Trade.h"
+
 #include <map>
 #include <memory>
 #include <vector>
-#include <unordered_map>
 
 class MatchingEngine {
 private:
-    std::map<std::string, std::unique_ptr<OrderBook>> books;
-
-    // histories (unlimited)
-    std::vector<Order> orderHistory;
-    std::vector<Trade> tradeHistory;
-
-    // quick lookup: orderId -> (symbol)
-    std::unordered_map<std::string, std::string> orderIdToSymbol;
-
-    OrderBook& getBook(const std::string& symbol);
+    std::map<std::string, std::unique_ptr<OrderBook>> orderBooks;
 
 public:
     MatchingEngine();
 
-    // submit order into book and return trades
     std::vector<Trade> submit(const Order& order);
 
-    // cancel order
-    bool cancel(const std::string& orderId);
+    bool cancel(const std::string& userId, const std::string& orderId, Order& cancelledOut);
+    bool modify(const std::string& userId, const std::string& orderId, double newSize, double newPrice, Order& modifiedOut);
 
-    // history access (for queries & snapshots later)
-    const std::vector<Order>& getOrderHistory() const { return orderHistory; }
-    const std::vector<Trade>& getTradeHistory() const { return tradeHistory; }
-
-    // book access for snapshots later
-    const std::map<std::string, std::unique_ptr<OrderBook>>& getBooks() const { return books; }
+    std::vector<Order> queryOrders(
+        const std::string& requesterUserId,
+        bool ownOnly,
+        const std::string& symbolFilter,
+        const std::string& sideFilter
+    );
 };
 
 #endif

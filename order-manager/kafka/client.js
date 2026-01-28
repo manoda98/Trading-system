@@ -29,6 +29,7 @@ async function startConsumer() {
         topic: 'ME_OUT',
         fromBeginning: false
     });
+    console.log("Order manager consuming from ME_OUT");
 
     await consumer.run({
         eachMessage: async ({ topic, partition, message}) => {
@@ -40,6 +41,7 @@ async function startConsumer() {
                     pendingRequests.delete(data.requestId);
 
                     if (data.status === 'SUCCESS') {
+                        console.log()
                         resolve(data.payload);
                     } else {
                         reject(new Error(data.error || 'Request failed'));
@@ -73,7 +75,7 @@ async function sendRequest(messageType, payload, timeout = 15000) {
                 originalResolve(value);
             },
             reject: (error) => {
-                clearTimeout(timeout);
+                clearTimeout(timeoutId);
                 originalReject(error);
             }
         });

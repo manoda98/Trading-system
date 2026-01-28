@@ -3,46 +3,88 @@
 #include "Order.h"
 #include <iostream>
 
+static bool validOrderBasic(const Order& o, std::string& why) {
+    if (o.orderId.empty() || o.userId.empty() || o.symbol.empty()) { why = "Missing fields"; return false; }
+    if (o.price <= 0 || o.size <= 0) { why = "Invalid price/size"; return false; }
+    return true;
+}
+
 int main() {
     MatchingEngine engine;
+    KafkaHandler kafka("localhost:9092");
 
-    // Consume only ME_IN for now
-    KafkaHandler kafka("localhost:9092", "ME_IN");
+    kafka.consume("ME_IN", [&](const ConsumedMessageInfo& m) {
+        const json& msg = m.data;
 
-    kafka.consumeMessages([&](const nlohmann::json& msg) {
+        std::string messageType = msg.value("messageType", "");
+        std::string requestId   = msg.value("requestId", "");
 
-        // Ignore non-order messages
-        if (msg["messageType"] != "ORDER_SUBMIT") return;
+        if (messageType.empty() || requestId.empty()) return;
 
-        Order order;
-        order.orderId = msg["payload"]["orderId"];
-        order.userId  = msg["payload"]["userId"];
-        order.symbol  = msg["payload"]["symbol"];
-        order.side    = msg["payload"]["side"] == "BUY"
-                            ? OrderSide::BUY
-                            : OrderSide::SELL;
-        order.price   = msg["payload"]["price"];
-        order.size    = msg["payload"]["size"];
-        order.remainingSize = order.size;
-        order.status  = OrderStatus::NEW;
-        order.timestamp = std::chrono::system_clock::now();
+        if (messageType == "ORDER_SUBMIT") {
+            Order o;
+            auto p = msg["payload"];
 
-        // Submit order to matching engine
-        auto trades = engine.submitOrder(order);
+            o.orderId = p.value("orderId", "");
+            o.userId  = p.value("userId", "");
+            o.symbol  = p.value("symbol", "");
+            std::string sideStr = p.value("side", "BUY");
+            o.side    = (sideStr == "BUY") ? OrderSide::BUY : OrderSide::SELL;
+            o.price   = p.value("price", 0.0);
+            o.size    = p.value("size", 0.0);
+            o.remainingSize = o.size;
+            o.status  = OrderStatus::NEW;
+            o.timestamp = std::chrono::system_clock::now();
 
-        // FOR NOW: just print trades to console
-        // Later this will go to ME_OUT
-        for (auto& t : trades) {
-            std::cout << "Trade executed: "
-                      << t.tradeId << " "
-                      << t.symbol << " "
-                      << t.quantity << " @ " << t.price
-                      << " BUY:" << t.buyOrderId
-                      << " SELL:" << t.sellOrderId << std::endl;
+            std::string why;
+            if (!validOrderBasic(o, why)) {
+                json resp = {
+                    {"messageType", "ORDER_SUBMIT_RESPONSE"},
+                    {"requestId", requestId},
+                    {"status", "ERROR"},
+                    {"error", why},
+                    {"payload", json::object()}
+                };
+                kafka.produce("ME_OUT", resp);
+                return;
+            }
+
+            auto trades = engine.submit(o);
+
+            json tradesArr = json::array();
+            for (auto& t : trades) {
+                tradesArr.push_back({
+                    {"tradeId", t.tradeId},
+                    {"symbol", t.symbol},
+                    {"price", t.price},
+                    {"quantity", t.quantity},
+                    {"buyOrderId", t.buyOrderId},
+                    {"sellOrderId", t.sellOrderId},
+                    {"buyUserId", t.buyUserId},
+                    {"sellUserId", t.sellUserId},
+                    {"timestampMs", (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+                        t.timestamp.time_since_epoch()).count()}
+                });
+            }
+
+            json resp = {
+                {"messageType", "ORDER_SUBMIT_RESPONSE"},
+                {"requestId", requestId},
+                {"status", "SUCCESS"},
+                {"payload", {
+                    {"orderId", o.orderId},
+                    {"symbol", o.symbol},
+                    {"side", sideStr},
+                    {"price", o.price},
+                    {"size", o.size},
+                    {"trades", tradesArr}
+                }}
+            };
+
+            kafka.produce("ME_OUT", resp);
+            return;
         }
 
-        // 🚫 DO NOT PRODUCE TO ME_OUT YET
-        // This will be added in next step
     });
 
     return 0;

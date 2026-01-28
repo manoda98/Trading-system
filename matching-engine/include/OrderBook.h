@@ -4,41 +4,44 @@
 #include "Order.h"
 #include "Trade.h"
 #include <map>
-#include <queue>
+#include <deque>
 #include <string>
 #include <vector>
-#include <functional> 
+#include <functional>
+#include <unordered_map>
 
 class OrderBook {
-    private:
-        std::string symbol;
+private:
+    std::string symbol;
 
-        //buy orders: highest price first
-        std::map<double, std::queue<Order>, std::greater<double>> buyOrders;
+    // BUY: highest price first
+    std::map<double, std::deque<Order>, std::greater<double>> buy;
+    // SELL: lowest price first
+    std::map<double, std::deque<Order>, std::less<double>> sell;
 
-        //sell orders: lowest price first
-        std::map<double, std::queue<Order>, std::less<double>> sellOrders;
+    struct IndexEntry { bool isBuy; double price; };
+    std::unordered_map<std::string, IndexEntry> index; // orderId -> (side, price)
 
-        //Map orderid price for fast lookup
-        //std::map<std::string,double> orderPriceMap;
+    long long tradeCounter{0};
+    std::string nextTradeId();
 
-        std::string generateTradeId();
-        //bool removeOrder(const std::string& orderId, bool isBuy);
+    void eraseEmptyLevel(bool isBuy, double price);
 
-    public:
-        OrderBook(const std::string& symbol);
+public:
+    explicit OrderBook(std::string sym);
 
-        //add order and return trades if matched
-        std::vector<Trade> addOrder(const Order& order);
+    std::vector<Trade> addOrder(const Order& order);
+    bool cancelOrder(const std::string& orderId);
+    bool hasOrder(const std::string& orderId) const;
 
-        //cancel order
-        //bool cancelOrder(const std::string& orderId);
+    bool getOrderSidePrice(const std::string& orderId, bool& isBuy, double& price) const;
 
-        //modify order
-        //std::vector<Trade> modifyOrder(const std::string& orderId, double newSize, double newPrice);
-
-        //double getBestBid() const;
-        //double getBestAsk() const;
+    const auto& getBuyLevels() const { return buy; }
+    const auto& getSellLevels() const { return sell; }
+    void loadFromLevels(
+        const std::map<double, std::deque<Order>, std::greater<double>>& b,
+        const std::map<double, std::deque<Order>, std::less<double>>& s
+    );
 };
 
 #endif

@@ -25,8 +25,8 @@ export const searchOwnOrders = (token) =>
 export const searchOtherOrders = (params, token) =>
   API.get('/api/order/search', { headers: { Authorization: `Bearer ${token}` }, params });
 
-export const tradeOrders = (id, token) =>
-  API.put(`/api/order/trade/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+export const tradeOrders = (data, token) =>
+  API.post(`/api/order/trade`, data, { headers: { Authorization: `Bearer ${token}` } });
 
 export const logout = (token) =>
   API.post('/api/user/logout', {} , { headers: { Authorization: `Bearer ${token}` } });

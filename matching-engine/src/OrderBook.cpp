@@ -12,7 +12,9 @@ std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
     std::vector<Trade> trades;
 
     Order working = incoming;
-    if (working.remainingSize <= 0) working.remainingSize = working.size;
+
+    if (working.remainingSize <= 0) 
+        working.remainingSize = working.size;
 
     if (working.side == OrderSide::BUY) {
         // match against best asks

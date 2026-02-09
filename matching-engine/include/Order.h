@@ -30,7 +30,7 @@ inline std::string toString(OrderStatus st) {
 struct Order {
     std::string orderId;
     std::string userId;
-    std::string symbol;  // e.g. "BTC/USD" or "BTCUSD"
+    std::string symbol;  
     OrderSide side{};
     double price{0.0};
     double size{0.0};
@@ -39,7 +39,7 @@ struct Order {
     std::chrono::system_clock::time_point timestamp{};
 
     bool isFilled() const { 
-        return remainingSize <= 1e-9; 
+        return remainingSize <= 0.0001; 
     }
     bool isPartiallyFilled() const { 
         return remainingSize < size && !isFilled(); 

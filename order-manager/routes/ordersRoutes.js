@@ -69,8 +69,8 @@ router.post('/submit', async (req, res) => {
             order: {
                 orderId: response.orderId,
                 status: response.status,
-                filledQuantity: response.filledQuantity || 0,
-                remainingQuantity: response.remainingQuantity || size,
+                filledQuantity: response.filledQuantity ?? 0,
+                remainingQuantity: response.remainingQuantity ?? size,
                 trades: response.trades || []
             }
            });
@@ -261,16 +261,8 @@ router.get('/search', async (req, res) => {
   }
 });
 
-
-//Trade endpoint
-router.post('/trade', async (req, res) => {
+router.get('/trades', async (req, res) => {
   try {
-    const { symbol, side, price, size } = req.body;
-
-    if (!symbol || !side || !price || !size) {
-      return res.status(400).json({ error: 'symbol, side, price, size are required' });
-    }
-
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -279,22 +271,16 @@ router.post('/trade', async (req, res) => {
 
     const payload = jwt.verify(token, 'SECRET');
 
-    // ✅ NEW: opposite side
-    const oppositeSide = side === "BUY" ? "SELL" : "BUY";
-    const orderId = uuidv4();
+    const symbol = req.query.symbol || "";
 
-    const response = await sendRequest('ORDER_SUBMIT', {
-      orderId,
+    const response = await sendRequest('QUERY_TRADES', {
       userId: payload.userId,
-      symbol,
-      side: oppositeSide,
-      price: parseFloat(price),
-      size: parseFloat(size)
+      symbol
     });
 
     res.status(200).json({
       status: "Success",
-      order: response
+      trades: response.trades || []
     });
 
   } catch (error) {
@@ -305,6 +291,7 @@ router.post('/trade', async (req, res) => {
     }
   }
 });
+
 
 
 

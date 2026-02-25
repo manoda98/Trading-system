@@ -52,5 +52,8 @@ export const deposit = (data, token) =>
 export const withdraw = (data, token) =>
   API.put('/api/accounts/withdraw', data, { headers: { Authorization: `Bearer ${token}` } });
 
+export const getTradeHistory = (params, token) =>
+  API.get('/api/order/trades', {headers: {Authorization: `Bearer ${token}`}, params});
+
 
 

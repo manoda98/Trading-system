@@ -51,24 +51,26 @@ std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
             working.remainingSize -= qty;
             makerSell.remainingSize -= qty;
 
-            // maker filled -> remove
+            
             if (makerSell.isFilled()) {
-                dq.pop_front();
-                if (dq.empty()) sellOrders.erase(bestAskIt);
-            }
+                makerSell.status = OrderStatus::FILLED;
+                // dq.pop_front();
+                // if (dq.empty()) sellOrders.erase(bestAskIt);
+            } else makerSell.status = OrderStatus::PARTIALLY_FILLED;
         }
 
         if (!working.isFilled()) {
+            working.status = OrderStatus::PENDING;
             buyOrders[working.price].push_back(working);
         }
 
     } else {
-        // SELL: match against best bids
+        
         while (!working.isFilled() && !buyOrders.empty()) {
             auto bestBidIt = buyOrders.begin();
             double bestBidPrice = bestBidIt->first;
 
-            // sell can only match if sellPrice <= bestBid
+            
             if (working.price > bestBidPrice) break;
 
             auto& dq = bestBidIt->second;
@@ -77,7 +79,7 @@ std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
             Order& makerBuy = dq.front();
 
             double qty = std::min(working.remainingSize, makerBuy.remainingSize);
-            double px = makerBuy.price; // maker price
+            double px = makerBuy.price; 
 
             Trade t;
             t.tradeId = generateTradeId();
@@ -98,12 +100,14 @@ std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
             makerBuy.remainingSize -= qty;
 
             if (makerBuy.isFilled()) {
-                dq.pop_front();
-                if (dq.empty()) buyOrders.erase(bestBidIt);
-            }
+                makerBuy.status = OrderStatus::FILLED;
+                // dq.pop_front();
+                // if (dq.empty()) buyOrders.erase(bestBidIt);
+            } else makerBuy.status = OrderStatus::PARTIALLY_FILLED;
         }
 
         if (!working.isFilled()) {
+            working.status = OrderStatus::PENDING;
             sellOrders[working.price].push_back(working);
         }
     }

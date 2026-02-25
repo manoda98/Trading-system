@@ -8,10 +8,12 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <string>
 
 class MatchingEngine {
 private:
     std::map<std::string, std::unique_ptr<OrderBook>> orderBooks;
+    std::vector<Trade> tradeHistory;
 
 public:
     MatchingEngine();
@@ -27,6 +29,11 @@ public:
         const std::string& symbolFilter,
         const std::string& sideFilter
     );
+
+    std::vector<Trade> queryTrades(
+        const std::string& userId,
+        const std::string& symbolFilter = ""
+    ) const;
 };
 
 #endif

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders, logout, getInstruments} from '../../api'; // Import API functions
+import { searchOwnOrders, cancelOrder, modifyOrder, createOrder, searchOtherOrders, tradeOrders, logout, getInstruments,getTradeHistory} from '../../api'; 
 import './styles.css';
 import { useNavigate, Link} from 'react-router-dom';
 import { Select, Space } from 'antd';
@@ -19,6 +19,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [instruments, setInstruments] = useState([]);
   const [symbolOptions, setSymbolOption] = useState([]);
+  const [trades, setTrades] = useState([]);
 
 
 
@@ -48,6 +49,8 @@ const TraderDashBoard = ({ token, onLogout }) => {
 
   useEffect(() => {
     fetchOrders();
+    // const t = setInterval(fetchOrders, 1500);
+    // return () => clearInterval(t);
   }, [token]);
 
     useEffect(() => {
@@ -277,7 +280,7 @@ const handleTrading = async (order) => {
                     <tr key={order.orderId}>
                       <td>{order.symbol}</td>
                       <td>{order.side}</td>
-                      <td>{order.size}</td>
+                      <td>{order.remainingSize ?? order.remainingQuantity ?? order.size}</td>
                       <td>{order.price}</td>
                       <td>{order.status || order.state || "PENDING"}</td>
                       <button
@@ -323,9 +326,9 @@ const handleTrading = async (order) => {
                   <tr key={order.orderId}>
                     <td>{order.symbol}</td>
                     <td>{order.side}</td>
-                    <td>{order.size}</td>
+                    <td>{order.remainingSize ?? order.remainingQuantity ?? order.size}</td>
                     <td>{order.price}</td>
-                    <td>{order.state}</td>
+                    <td>{order.status || order.state || "PENDING"}</td>
                     <td>
                       <button
                         className="cancel-btn"

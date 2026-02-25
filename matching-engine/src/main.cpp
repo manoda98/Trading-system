@@ -14,6 +14,11 @@ static std::string statusToStr(OrderStatus s) {
         default: return "UNKNOWN";
     }
 }
+static std::string liveStatusFromRemaining(const Order& o) {
+    if (o.remainingSize <= 0.0001) return "FILLED";
+    if (o.remainingSize < o.size)  return "PARTIALLY_FILLED";
+    return "PENDING";
+}
 
 static bool validOrderBasic(const Order& o, std::string& why) {
     if (o.orderId.empty() || o.userId.empty() || o.symbol.empty()) { why = "Missing fields"; return false; }
@@ -109,7 +114,7 @@ int main() {
                 }}
             };
 
-            kafka.produce("ME_OUT", resp);
+            kafka.produce("ME_OUT", requestId, resp);;
             return;
         }
 
@@ -129,7 +134,7 @@ int main() {
                 {"payload", ok ? json{{"orderId", orderId}, {"status", "CANCELLED"}} : json::object()},
                 {"error", ok ? "" : "Cancel failed (not found / not owner)"}
             };
-            kafka.produce("ME_OUT", resp);
+            kafka.produce("ME_OUT", requestId, resp);;
             return;
         }
 
@@ -158,7 +163,7 @@ int main() {
                 } : json::object()},
                 {"error", ok ? "" : "Modify failed (not found / not owner)"}
             };
-            kafka.produce("ME_OUT", resp);
+            kafka.produce("ME_OUT", requestId, resp);;
             return;
         }
 
@@ -182,7 +187,7 @@ int main() {
                     {"price", o.price},
                     {"size", o.size},
                     {"remainingSize", o.remainingSize},
-                    {"status", statusToStr(o.status)}
+                    {"status", liveStatusFromRemaining(o)}
                 });
             }
 
@@ -192,11 +197,43 @@ int main() {
                 {"status", "SUCCESS"},
                 {"payload", {{"orders", arr}}}
             };
-            kafka.produce("ME_OUT", resp);
+            kafka.produce("ME_OUT", requestId, resp);;
             return;
         }
 
-   
+        if (messageType == "QUERY_TRADES") {
+            auto p = msg["payload"];
+            std::string userId = p.value("userId", "");
+            std::string symbol = p.value("symbol", "");
+
+            auto trades = engine.queryTrades(userId, symbol);
+
+            json arr = json::array();
+            for (auto& t : trades) {
+                arr.push_back({
+                    {"tradeId", t.tradeId},
+                    {"symbol", t.symbol},
+                    {"price", t.price},
+                    {"quantity", t.quantity},
+                    {"buyOrderId", t.buyOrderId},
+                    {"sellOrderId", t.sellOrderId},
+                    {"buyUserId", t.buyUserId},
+                    {"sellUserId", t.sellUserId},
+                    {"timestampMs", (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+                        t.timestamp.time_since_epoch()).count()}
+                });
+            }
+
+            json resp = {
+                {"messageType", "QUERY_TRADES_RESPONSE"},
+                {"requestId", requestId},
+                {"status", "SUCCESS"},
+                {"payload", {{"trades", arr}}}
+            };
+
+            kafka.produce("ME_OUT", requestId, resp);
+            return;
+        }
         json resp = {
             {"messageType", messageType + std::string("_RESPONSE")},
             {"requestId", requestId},
@@ -204,7 +241,8 @@ int main() {
             {"error", "Unsupported messageType"},
             {"payload", json::object()}
         };
-        kafka.produce("ME_OUT", resp);
+        kafka.produce("ME_OUT", requestId, resp);
+        return;
     });
 
     return 0;

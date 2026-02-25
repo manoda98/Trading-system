@@ -6,7 +6,12 @@ std::vector<Trade> MatchingEngine::submit(const Order& order) {
     if (!orderBooks.count(order.symbol)) {
         orderBooks[order.symbol] = std::make_unique<OrderBook>(order.symbol);
     }
-    return orderBooks[order.symbol]->addOrder(order);
+    auto trades = orderBooks[order.symbol]->addOrder(order);
+
+    for (const auto& t : trades) {
+        tradeHistory.push_back(t);
+    }
+    return trades;
 }
 
 bool MatchingEngine::cancel(const std::string& userId, const std::string& orderId, Order& cancelledOut) {
@@ -15,7 +20,6 @@ bool MatchingEngine::cancel(const std::string& userId, const std::string& orderI
         if (book->cancelOrder(orderId, found)) {
             
             if (found.userId != userId) {
-                // not allowed -> reinsert back (best effort)
                 book->addOrder(found);
                 return false;
             }
@@ -62,5 +66,23 @@ std::vector<Order> MatchingEngine::queryOrders(
         out.insert(out.end(), chunk.begin(), chunk.end());
     }
 
+    return out;
+}
+
+std::vector<Trade> MatchingEngine::queryTrades(
+    const std::string& userId,
+    const std::string& symbolFilter
+) const {
+    std::vector<Trade> out;
+    out.reserve(tradeHistory.size());
+
+    for (const auto& t : tradeHistory) {
+        bool isMine = (t.buyUserId == userId || t.sellUserId == userId);
+        if (!isMine) continue;
+
+        if (!symbolFilter.empty() && t.symbol != symbolFilter) continue;
+
+        out.push_back(t);
+    }
     return out;
 }

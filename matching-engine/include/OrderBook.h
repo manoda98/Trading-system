@@ -25,13 +25,11 @@ private:
 public:
     explicit OrderBook(const std::string& sym);
 
-    // Add order and match. Updates maker/taker remaining sizes inside stored orders.
     std::vector<Trade> addOrder(const Order& incoming);
 
     bool cancelOrder(const std::string& orderId, Order& cancelledOut);
     bool modifyOrder(const std::string& orderId, double newSize, double newPrice, Order& modifiedOut);
 
-    // Query OPEN orders from this book
     std::vector<Order> getOpenOrdersFiltered(
         const std::string& requesterUserId,
         bool ownOnly,

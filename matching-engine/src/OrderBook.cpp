@@ -54,13 +54,16 @@ std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
             
             if (makerSell.isFilled()) {
                 makerSell.status = OrderStatus::FILLED;
-                // dq.pop_front();
-                // if (dq.empty()) sellOrders.erase(bestAskIt);
+                dq.pop_front();
+                if (dq.empty()) sellOrders.erase(bestAskIt);
             } else makerSell.status = OrderStatus::PARTIALLY_FILLED;
         }
 
         if (!working.isFilled()) {
-            working.status = OrderStatus::PENDING;
+            if (working.remainingSize == working.size)
+                working.status = OrderStatus::NEW;
+            else
+                working.status = OrderStatus::PARTIALLY_FILLED;
             buyOrders[working.price].push_back(working);
         }
 
@@ -101,13 +104,16 @@ std::vector<Trade> OrderBook::addOrder(const Order& incoming) {
 
             if (makerBuy.isFilled()) {
                 makerBuy.status = OrderStatus::FILLED;
-                // dq.pop_front();
-                // if (dq.empty()) buyOrders.erase(bestBidIt);
+                dq.pop_front();
+                if (dq.empty()) buyOrders.erase(bestBidIt);
             } else makerBuy.status = OrderStatus::PARTIALLY_FILLED;
         }
 
         if (!working.isFilled()) {
-            working.status = OrderStatus::PENDING;
+            if (working.remainingSize == working.size)
+                working.status = OrderStatus::NEW;
+            else
+                working.status = OrderStatus::PARTIALLY_FILLED;
             sellOrders[working.price].push_back(working);
         }
     }
@@ -186,7 +192,6 @@ bool OrderBook::modifyOrder(const std::string& orderId, double newSize, double n
 APPLY:
     if (!foundAny) return false;
 
-    // beginner rule: modifying resets remaining size to newSize
     found.size = newSize;
     found.price = newPrice;
     found.remainingSize = newSize;
@@ -194,7 +199,6 @@ APPLY:
 
     modifiedOut = found;
 
-    // Put back (and match)
     addOrder(found);
     return true;
 }

@@ -282,7 +282,7 @@ const handleTrading = async (order) => {
                       <td>{order.side}</td>
                       <td>{order.remainingSize ?? order.remainingQuantity ?? order.size}</td>
                       <td>{order.price}</td>
-                      <td>{order.status || order.state || "PENDING"}</td>
+                      <td>{order.status || order.state || "NEW"}</td>
                       <button
                         className="trade-btn"
                         onClick={() => handleTrading(order)}
@@ -328,7 +328,7 @@ const handleTrading = async (order) => {
                     <td>{order.side}</td>
                     <td>{order.remainingSize ?? order.remainingQuantity ?? order.size}</td>
                     <td>{order.price}</td>
-                    <td>{order.status || order.state || "PENDING"}</td>
+                    <td>{order.status || order.state || "NEW"}</td>
                     <td>
                       <button
                         className="cancel-btn"

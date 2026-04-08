@@ -34,35 +34,35 @@ button {
   border: none;
   border-radius: 4px;
   font-size: 14px;
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  transition: background-color 0.3s ease;
 }
 
 /* Universal color styles */
 .btn-red {
-  background-color: red; /* Universal red color for cancel buttons */
+  background-color: red; 
   color: white;
 }
 
 .btn-red:hover {
-  background-color: rgba(255, 0, 0, 0.6); /* Lighter red on hover */
+  background-color: rgba(255, 0, 0, 0.6); 
 }
 
-.btn-blue {
-  background-color: blue; /* Universal blue color for edit buttons */
+.btn-#1677ff {
+  background-color: #1677ff; 
   color: white;
 }
 
-.btn-blue:hover {
-  background-color: rgba(0, 0, 255, 0.6); /* Lighter blue on hover */
+.btn-#1677ff:hover {
+  background-color: rgba(0, 0, 255, 0.6); 
 }
 
 .btn-green {
-  background-color: green; /* Universal green color for new order buttons */
+  background-color: green; 
   color: white;
 }
 
 .btn-green:hover {
-  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+  background-color: rgba(0, 128, 0, 0.6); 
 }
 
 .edit-order-form {
@@ -98,60 +98,60 @@ button {
   margin-bottom: 16px;
 }
 
-/* Assigning universal button classes to existing buttons */
+
 .new-order-btn {
-  padding: 8px 8px; /* Adjust padding for smaller size */
-  font-size: 14px;  /* Reduce font size */
-  height: auto;     /* Adjust height naturally */
-  line-height: 1.2; /* Adjust text line height */
-  width: 100px;     /* Set a specific width to reduce button length */
-  text-align: center; /* Center the button text */
-  background-color: green; /* Universal green color */
+  padding: 8px 8px; 
+  font-size: 14px;  
+  height: auto;     
+  line-height: 1.2; 
+  width: 100px;     
+  text-align: center;
+  background-color: green;
   color: white;
   transition: background-color 0.3s ease;
 }
 
 .new-order-btn:hover {
-  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+  background-color: rgba(0, 128, 0, 0.6); 
 }
 .cancel-btn {
-  background-color: red; /* Universal red color */
+  background-color: red; 
   color: white;
   transition: background-color 0.3s ease;
 }
 
 .cancel-btn:hover {
-  background-color: rgba(255, 0, 0, 0.6); /* Lighter red on hover */
+  background-color: rgba(255, 0, 0, 0.6); 
 }
 
 .edit-btn {
-  background-color: blue; /* Universal blue color */
+  background-color: #1677ff; 
   color: white;
   transition: background-color 0.3s ease;
 }
 
 .edit-btn:hover {
-  background-color: rgba(0, 0, 255, 0.6); /* Lighter blue on hover */
+  background-color: rgba(0, 0, 255, 0.6); 
 }
 
 .update-btn {
-  background-color: blue; /* Universal blue color for edit buttons */
+  background-color: #1677ff; 
   color: white;
   transition: background-color 0.3s ease;
 }
 
 .update-btn:hover {
-  background-color: rgba(0, 0, 255, 0.6); /* Lighter blue on hover */
+  background-color: rgba(0, 0, 255, 0.6); 
 }
 
 .cancel-edit-btn {
-  background-color: red; /* Universal red color for cancel buttons */
+  background-color: red; 
   color: white;
   transition: background-color 0.3s ease;
 }
 
 .cancel-edit-btn:hover {
-  background-color: rgba(255, 0, 0, 0.6); /* Lighter red on hover */
+  background-color: rgba(255, 0, 0, 0.6);
 }
 
 .split-container {
@@ -237,63 +237,61 @@ button {
 }
 
 .trade-btn {
-  background-color:  #28a745; /* Universal red color */
+  background-color:  #28a745; 
   color: white;
   transition: background-color 0.3s ease;
 }
 
 .trade-btn:hover {
-  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+  background-color: rgba(0, 128, 0, 0.6); 
 }
 .split-container {
   display: flex;
-  height: 100vh; /* Full viewport height */
-  overflow: hidden; /* Prevent content from spilling out */
+  height: 100vh; 
+  overflow: hidden; 
 }
 
 .left-section, .right-section {
   flex: 1;
-  overflow-y: auto; /* Enable vertical scrolling in each section */
+  overflow-y: auto; 
   padding: 20px;
-  box-sizing: border-box; /* Include padding in width/height calculations */
-}
+  box-sizing: border-box; 
 
-/* Top Space with Logout Button */
+}
 .top-space {
-  background-color: #f9f9f9; /* Light background for top space */
-  padding: 15px 20px;  /* Adjust padding for spacing */
-  display: flex;
-  justify-content: flex-end; /* Align logout button to the right */
+  background-color: #f9f9f9; 
+  padding: 15px 20px;  
+  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 10px; /* Space between the top space and main content */
+  margin-bottom: 10px; 
 }
 
-/* Logout Button Styles */
+
 .logout-btn {
-  background-color: #1bbe1b; /* Universal green color (same as new order button) */
+  background-color: #1bbe1b; 
   color: white;
-  padding: 8px 8px; /* Adjust padding for smaller size */
-  font-size: 14px;  /* Reduce font size */
-  height: auto;     /* Adjust height naturally */
-  line-height: 1.2; /* Adjust text line height */
-  width: 100px;     /* Set a specific width to reduce button length */
-  text-align: center; /* Center the button text */
+  padding: 8px 8px; 
+  font-size: 14px;  
+  height: auto;     
+  line-height: 1.2; 
+  width: 100px;     
+  text-align: center; 
   border: none;
-  border-radius: 4px; /* Consistent with other buttons */
+  border-radius: 4px; 
   cursor: pointer;
-  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  transition: background-color 0.3s ease; 
 }
 
 .logout-btn:hover {
-  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+  background-color: rgba(0, 128, 0, 0.6); 
 }
 
 
-/* Split Container Styles */
+
 .split-container {
   display: flex;
-  height: calc(100vh - 60px); /* Adjust for top space height */
-  overflow: hidden; /* Prevent content overflow */
+  height: calc(100vh - 60px); 
+  overflow: hidden; 
 }
 
 .left-section, .right-section {
@@ -308,9 +306,9 @@ button {
   margin-bottom: 16px;
 }
 
-/* New Order Button (to match the logout button) */
+
 .new-order-btn {
-  background-color: #1bbe1b; /* Green color */
+  background-color: #1bbe1b; 
   color: white;
   padding: 8px 12px;
   font-size: 14px;
@@ -321,18 +319,32 @@ button {
 }
 
 .new-order-btn:hover {
-  background-color: rgba(0, 128, 0, 0.6); /* Lighter green on hover */
+  background-color: rgba(0, 128, 0, 0.6); 
 }
 
-/* Make sure split-container adapts to screen sizes */
+
 @media (max-width: 768px) {
   .split-container {
-    flex-direction: column; /* Stack sections vertically on smaller screens */
+    flex-direction: column; 
   }
 
   .left-section, .right-section {
     flex: none;
-    width: 100%; /* Full-width sections on small screens */
+    width: 100%; 
     padding: 10px;
   }
 }
+
+.primary-btn {
+  background-color: #1677ff;   
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  background-color: #4096ff;
+}
+

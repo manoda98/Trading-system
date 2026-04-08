@@ -5,27 +5,34 @@ import { useNavigate, Link} from 'react-router-dom';
 import { Select, Space } from 'antd';
 
 const TraderDashBoard = ({ token, onLogout }) => {
+  const navigate = useNavigate();
+
   const [orders, setOrders] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  
+
   const [editingOrder, setEditingOrder] = useState(null);
-  const [newSize, setNewSize] = useState('');
-  const [newPrice, setNewPrice] = useState('');
   const [submittingNewOrder, setSubmittingNewOrder] = useState(false);
+
   const [symbol, setSymbol] = useState('');
   const [side, setSide] = useState('');
   const [price, setPrice] = useState('');
   const [size, setSize] = useState('');
+
+  const [newSize, setNewSize] = useState('');
+  const [newPrice, setNewPrice] = useState('');
+
   const [searchSymbol, setSearchSymbol] = useState('');
   const [searchSide, setSearchSide] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+
   const [instruments, setInstruments] = useState([]);
   const [symbolOptions, setSymbolOption] = useState([]);
+
   const [trades, setTrades] = useState([]);
+  const [tradeSymbol, setTradeSymbol] = useState('');
 
 
-
-  const navigate = useNavigate();
-
-  const getOrderState = (o) => o?.state || o?.status || "PENDING";
+  //const getOrderState = (o) => o?.state || o?.status || "PENDING";
 
   const fetchOrders = async () => {
     try {
@@ -46,6 +53,16 @@ const TraderDashBoard = ({ token, onLogout }) => {
         alert('Error fetching your instruments.');
       }
     };
+
+  //fetch trades
+  const fetchTrades = async (symbol) => {
+    try {
+      const {data} = await getTradeHistory({symbol}, token);
+      setTrades(data.trades || []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -84,7 +101,7 @@ const TraderDashBoard = ({ token, onLogout }) => {
 
       fetchOrders();
     } catch (error) {
-      alert('Error canceling the order.');
+      alert('Cancel failed.');
     }
   };
 
@@ -151,42 +168,57 @@ const TraderDashBoard = ({ token, onLogout }) => {
       }
 
       const { data } = await searchOtherOrders({ symbol: searchSymbol, side: searchSide }, token);
-      setSearchResults(data.orders); // Update state with search results
+      setSearchResults(data.orders || []); 
+      await fetchTrades(searchSymbol);
     } catch (error) {
       console.log(error);
       alert('Error fetching search results.');
     }
   };
-  // handle trading order
 
-const handleTrading = async (order) => {
-  try {
-    const response = await tradeOrders(
-      {
-        symbol: order.symbol,
-        side: order.side,
-        price: order.price,
-        size: order.remainingSize || order.size  
-      },
-      token
-    );
 
-    if (response.data?.error) {
-      alert(response.data.error);
-      return;
+    const fetchTradeHistory = async () => {
+    try {
+      const { data } = await getTradeHistory(
+        { symbol: tradeSymbol },
+        token
+      );
+
+      setTrades(data.trades || []);
+    } catch {
+      alert('Error fetching trade history');
     }
+  };
+//   // handle trading order
 
-    alert('Trade sent to matching engine!');
+// const handleTrading = async (order) => {
+//   try {
+//     const response = await tradeOrders(
+//       {
+//         symbol: order.symbol,
+//         side: order.side,
+//         price: order.price,
+//         size: order.remainingSize || order.size  
+//       },
+//       token
+//     );
+
+//     if (response.data?.error) {
+//       alert(response.data.error);
+//       return;
+//     }
+
+//     alert('Trade sent to matching engine!');
 
     
-    await fetchOrders();
-    await searchOtherOrdersHandler();
+//     await fetchOrders();
+//     await searchOtherOrdersHandler();
 
-  } catch (error) {
-    console.log(error);
-    alert('Error executing trade.');
-  }
-};
+//   } catch (error) {
+//     console.log(error);
+//     alert('Error executing trade.');
+//   }
+// };
 
 
   //Handle logout
@@ -229,74 +261,101 @@ const handleTrading = async (order) => {
     <div className="split-container">
       {/* Search Other Orders Section */}
       <div className="left-section">
-        <div className="order-container">
-          <div className="header-row">
-            <h3>Market Orders</h3>
-            <div className="input-group">
-              <label>Enter Symbol: </label>
+          <div className="order-container">
+
+            {/* -------- MARKET ORDERS -------- */}
+            <div className="header-row">
+              <h3>Market Orders</h3>
+
               <Select
-                defaultValue=""
+                placeholder="Symbol"
                 style={{ width: 120 }}
-                onChange={ (value) => {
-                  handleSearchSymbolChange(value)
-                }}
-                options={symbolOptions}> 
-              </Select>
-            </div>
-            <div className="input-group">
-              <label>Enter Side: </label>
+                onChange={setSearchSymbol}
+                options={symbolOptions}
+              />
+
               <Select
-                defaultValue=""
+                placeholder="Side"
                 style={{ width: 120 }}
-                onChange={handleSearchSideChange}
+                onChange={setSearchSide}
                 options={[
                   { value: 'BUY', label: 'BUY' },
                   { value: 'SELL', label: 'SELL' },
                 ]}
               />
-            </div>
-            <button className="new-order-btn" onClick={searchOtherOrdersHandler}>
-              Search
-            </button>
-          </div>
 
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="search-results">
-              <h4>Market Orders</h4>
-              <table className="orders-table">
-                <thead>
-                  <tr>
-                    <th>Symbol</th>
-                    <th>Side</th>
-                    <th>Size</th>
-                    <th>Price</th>
-                    <th>State</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {searchResults.map((order) => (
-                    <tr key={order.orderId}>
-                      <td>{order.symbol}</td>
-                      <td>{order.side}</td>
-                      <td>{order.remainingSize ?? order.remainingQuantity ?? order.size}</td>
-                      <td>{order.price}</td>
-                      <td>{order.status || order.state || "NEW"}</td>
-                      <button
-                        className="trade-btn"
-                        onClick={() => handleTrading(order)}
-                      >
-                        Trade
-                      </button>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <button onClick={searchOtherOrdersHandler}>
+                Search
+              </button>
             </div>
-          )}
+
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Side</th>
+                  <th>Size</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {searchResults.map(o => (
+                  <tr key={o.orderId}>
+                    <td>{o.symbol}</td>
+                    <td>{o.side}</td>
+                    <td>{o.remainingSize ?? o.size}</td>
+                    <td>{o.price}</td>
+                    <td>{o.status || "NEW"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <h3 style={{ marginTop: "30px" }}>Trade History</h3>
+
+            <div className="header-row">
+              <Select
+                placeholder="Symbol (optional)"
+                style={{ width: 150 }}
+                onChange={setTradeSymbol}
+                options={symbolOptions}
+              />
+
+              <button onClick={fetchTradeHistory}>
+                Load Trade History
+              </button>
+            </div>
+
+            {/* ALWAYS visible table */}
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Trade ID</th>
+                  <th>Symbol</th>
+                  <th>Price</th>
+                  <th>Qty</th>
+                  <th>Buyer</th>
+                  <th>Seller</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {trades.map(t => (
+                  <tr key={t.tradeId}>
+                    <td>{t.tradeId}</td>
+                    <td>{t.symbol}</td>
+                    <td>{t.price}</td>
+                    <td>{t.quantity}</td>
+                    <td>{t.buyUserId}</td>
+                    <td>{t.sellUserId}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+          </div>
         </div>
-      </div>
 
       {/* right section: Your Orders */}
       <div className="right-section">
